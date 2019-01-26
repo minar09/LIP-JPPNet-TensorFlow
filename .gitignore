@@ -2,4 +2,5 @@ checkpoint/
 output/
 logs/
 model/
+.idea/
 *.pyc

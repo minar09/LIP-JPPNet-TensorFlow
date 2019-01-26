@@ -57,6 +57,7 @@ LAYER_TYPES = LAYER_DESCRIPTORS.keys()
 
 LayerType = type('LayerType', (), {t: t for t in LAYER_TYPES})
 
+
 class NodeKind(LayerType):
 
     @staticmethod
@@ -71,7 +72,8 @@ class NodeKind(LayerType):
             val = LAYER_DESCRIPTORS[node.kind](node)
             return val
         except NotImplementedError:
-            raise KaffeError('Output shape computation not implemented for type: %s' % node.kind)
+            raise KaffeError(
+                'Output shape computation not implemented for type: %s' % node.kind)
 
 
 class NodeDispatchError(KaffeError):
@@ -113,7 +115,8 @@ class LayerAdapter(object):
         try:
             return getattr(self.layer, name)
         except AttributeError:
-            raise NodeDispatchError('Caffe parameters not found for layer kind: %s' % (self.kind))
+            raise NodeDispatchError(
+                'Caffe parameters not found for layer kind: %s' % (self.kind))
 
     @staticmethod
     def get_kernel_value(scalar, repeated, idx, default=None):
@@ -138,8 +141,10 @@ class LayerAdapter(object):
         params = self.parameters
         k_h = self.get_kernel_value(params.kernel_h, params.kernel_size, 0)
         k_w = self.get_kernel_value(params.kernel_w, params.kernel_size, 1)
-        s_h = self.get_kernel_value(params.stride_h, params.stride, 0, default=1)
-        s_w = self.get_kernel_value(params.stride_w, params.stride, 1, default=1)
+        s_h = self.get_kernel_value(
+            params.stride_h, params.stride, 0, default=1)
+        s_w = self.get_kernel_value(
+            params.stride_w, params.stride, 1, default=1)
         p_h = self.get_kernel_value(params.pad_h, params.pad, 0, default=0)
         p_w = self.get_kernel_value(params.pad_h, params.pad, 1, default=0)
         return KernelParameters(k_h, k_w, s_h, s_w, p_h, p_w)

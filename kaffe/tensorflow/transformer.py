@@ -80,9 +80,11 @@ class TensorFlowMapper(NodeMapper):
     def get_kernel_params(self, node):
         kernel_params = node.layer.kernel_parameters
         input_shape = node.get_only_parent().output_shape
-        padding = get_padding_type(kernel_params, input_shape, node.output_shape)
+        padding = get_padding_type(
+            kernel_params, input_shape, node.output_shape)
         # Only emit the padding if it's not the default value.
-        padding = {'padding': padding} if padding != network.DEFAULT_PADDING else {}
+        padding = {
+            'padding': padding} if padding != network.DEFAULT_PADDING else {}
         return (kernel_params, padding)
 
     def map_convolution(self, node):
@@ -147,7 +149,8 @@ class TensorFlowMapper(NodeMapper):
 
     def map_batch_norm(self, node):
         scale_offset = len(node.data) == 4
-        kwargs = {'is_training': True} if scale_offset else {'is_training': True, 'scale': False}
+        kwargs = {'is_training': True} if scale_offset else {
+            'is_training': True, 'scale': False}
         return MaybeActivated(node, default=False)('batch_normalization', **kwargs)
 
     def map_eltwise(self, node):
@@ -156,7 +159,8 @@ class TensorFlowMapper(NodeMapper):
         try:
             return TensorFlowNode(operations[op_code])
         except KeyError:
-            raise KaffeError('Unknown elementwise operation: {}'.format(op_code))
+            raise KaffeError(
+                'Unknown elementwise operation: {}'.format(op_code))
 
     def commit(self, chains):
         return chains
@@ -190,7 +194,8 @@ class TensorFlowEmitter(object):
         assert len(chain)
         s = '(self.feed('
         sep = ', \n' + self.prefix + (' ' * len(s))
-        s += sep.join(["'%s'" % parent.name for parent in chain[0].node.parents])
+        s += sep.join(["'%s'" %
+                       parent.name for parent in chain[0].node.parents])
         return self.statement(s + ')')
 
     def emit_node(self, node):
@@ -273,7 +278,8 @@ class TensorFlowTransformer(object):
                 ParameterNamer(),
             ]
             self.graph = self.graph.transformed(transformers)
-            self.params = {node.name: node.data for node in self.graph.nodes if node.data}
+            self.params = {
+                node.name: node.data for node in self.graph.nodes if node.data}
         return self.params
 
     def transform_source(self):

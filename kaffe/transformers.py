@@ -37,13 +37,15 @@ class DataInjector(object):
     def load_using_caffe(self):
         caffe = get_caffe_resolver().caffe
         net = caffe.Net(self.def_path, self.data_path, caffe.TEST)
-        data = lambda blob: blob.data
+
+        def data(blob): return blob.data
         self.params = [(k, map(data, v)) for k, v in net.params.items()]
 
     def load_using_pb(self):
         data = get_caffe_resolver().NetParameter()
         data.MergeFromString(open(self.data_path, 'rb').read())
-        pair = lambda layer: (layer.name, self.normalize_pb_data(layer))
+
+        def pair(layer): return (layer.name, self.normalize_pb_data(layer))
         layers = data.layers or data.layer
         self.params = [pair(layer) for layer in layers if layer.blobs]
         self.did_use_pb = True
@@ -59,7 +61,8 @@ class DataInjector(object):
                 c_i = blob.channels
                 h = blob.height
                 w = blob.width
-            data = np.array(blob.data, dtype=np.float32).reshape(c_o, c_i, h, w)
+            data = np.array(blob.data, dtype=np.float32).reshape(
+                c_o, c_i, h, w)
             transformed.append(data)
         return transformed
 
@@ -85,7 +88,8 @@ class DataInjector(object):
                 node = graph.get_node(layer_name)
                 node.data = self.adjust_parameters(node, data)
             else:
-                print_stderr('Ignoring parameters for non-existent layer: %s' % layer_name)
+                print_stderr(
+                    'Ignoring parameters for non-existent layer: %s' % layer_name)
         return graph
 
 
@@ -112,7 +116,8 @@ class DataReshaper(object):
         try:
             return self.mapping[node_kind]
         except KeyError:
-            raise KaffeError('Ordering not found for node kind: {}'.format(node_kind))
+            raise KaffeError(
+                'Ordering not found for node kind: {}'.format(node_kind))
 
     def __call__(self, graph):
         for node in graph.nodes:
@@ -121,7 +126,8 @@ class DataReshaper(object):
             if node.kind not in self.reshaped_node_types:
                 # Check for 2+ dimensional data
                 if any(len(tensor.shape) > 1 for tensor in node.data):
-                    print_stderr('Warning: parmaters not reshaped for node: {}'.format(node))
+                    print_stderr(
+                        'Warning: parmaters not reshaped for node: {}'.format(node))
                 continue
             transpose_order = self.map(node.kind)
             weights = node.data[0]
@@ -283,7 +289,8 @@ class ParameterNamer(object):
                 if len(node.data) == 4:
                     names += ('gamma', 'beta')
             else:
-                print_stderr('WARNING: Unhandled parameters: {}'.format(node.kind))
+                print_stderr(
+                    'WARNING: Unhandled parameters: {}'.format(node.kind))
                 continue
             assert len(names) == len(node.data)
             node.data = dict(zip(names, node.data))

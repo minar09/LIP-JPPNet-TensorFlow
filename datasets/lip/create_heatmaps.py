@@ -4,10 +4,11 @@ import random
 import scipy.misc
 import numpy as np
 from scipy.stats import multivariate_normal
-import scipy.io as sio 
+import scipy.io as sio
 import csv
 
-csv_file = 'lip_train_set.csv'
+#csv_file = 'lip_train_set.csv'
+csv_file = 'lip_val_set.csv'
 
 with open(csv_file, "r") as input_file:
 
@@ -17,12 +18,13 @@ with open(csv_file, "r") as input_file:
         print(img_id)
 
         #image_path = './images/{}.jpg'.format(img_id)
-        image_path = '/media/emcom/RESEARCH/Dataset/LIP/images/train_images/{}.jpg'.format(img_id)
+        #image_path = 'E:/Dataset/LIP/images/train_images/{}.jpg'.format(img_id)
+        image_path = 'E:/Dataset/LIP/images/val_images/{}.jpg'.format(img_id)
         img = scipy.misc.imread(image_path).astype(np.float)
         rows = img.shape[0]
         cols = img.shape[1]
         heatmap_ = np.zeros((rows, cols, 16), dtype=np.float64)
-        
+
         for idx, point in enumerate(row):
             if 'nan' in point:
                 point = 0
@@ -30,7 +32,7 @@ with open(csv_file, "r") as input_file:
                 c_ = int(point)
                 c_ = min(c_, cols-1)
                 c_ = max(c_, 0)
-            elif idx % 3 == 1 :
+            elif idx % 3 == 1:
                 r_ = int(point)
                 r_ = min(r_, rows-1)
                 r_ = max(r_, 0)
@@ -42,7 +44,10 @@ with open(csv_file, "r") as input_file:
                     r2 = min(c_+25, cols-1)
                     for i in range(l1, r1):
                         for j in range(l2, r2):
-                            heatmap_[i, j, int(idx / 3)] = var.pdf([i, j]) * 400
-                save_path = '/media/emcom/RESEARCH/Dataset/LIP/heatmap/{}_{}.png'.format(img_id, int(idx/3))
-                scipy.misc.imsave(save_path, heatmap_[:,:,int(idx/3)])
+                            heatmap_[i, j, int(idx / 3)
+                                     ] = var.pdf([i, j]) * 400
+                #save_path = 'E:/Dataset/LIP/heatmap/train_maps/{}_{}.png'.format(img_id, int(idx/3))
+                save_path = 'E:/Dataset/LIP/heatmap/val_maps/{}_{}.png'.format(
+                    img_id, int(idx/3))
+                scipy.misc.imsave(save_path, heatmap_[:, :, int(idx/3)])
         heatsum_ = np.sum(heatmap_, axis=2)
