@@ -5,72 +5,27 @@ from tqdm import tqdm
 
 
 def main():
-    # train_image_paths, train_label_paths, val_image_paths, val_label_paths = init_path()
     val_image_paths, val_label_paths = init_path()
-    #train_hist = compute_hist(train_image_paths, train_label_paths)
     val_hist = compute_hist(val_image_paths, val_label_paths)
-    #show_result(train_hist)
     show_result(val_hist)
 
 
 def init_path():
-    # train_image_dir = 'E:/Dataset/LIP/training/images/'
-    # train_label_dir = 'E:/Dataset/LIP/training/labels/'
-    # val_image_dir = 'E:/Dataset/LIP/validation/images/'
-    # val_label_dir = 'E:/Dataset/LIP/validation/labels/'
-    
-    val_output_dir = 'E:/Dataset/LIP/output/parsing/val/'
+    # val_output_dir = 'E:/Dataset/LIP/output/JPPNet_parsing/val/'
+    # val_output_dir = 'E:/Dataset/LIP/output/parsing/val/'
+    val_output_dir = 'E:/Dataset/LIP/output/parsing/val_crf/'
     val_id_list = 'E:/Dataset/LIP/list/val_id.txt'
     val_label_dir = 'E:/Dataset/LIP/validation/labels/'
 
-    # train_image_file_names = os.listdir(train_image_dir)
-    # train_label_file_names = os.listdir(train_label_dir)
-    # val_image_file_names = os.listdir(val_image_dir)
-    # val_label_file_names = os.listdir(val_label_dir)
-
-    # with open('E:/Dataset/LIP/list/train_id.txt', 'w') as file:
-        # for id in train_image_file_names:
-            # file.write("%s\n" % id[:-4])
-
-    # with open('E:/Dataset/LIP/list/val_id.txt', 'w') as file:
-        # for id in val_image_file_names:
-            # file.write("%s\n" % id[:-4])
-
-    #train_image_paths = []
-    #train_label_paths = []
-    # val_image_paths = []
-    # val_label_paths = []
-    
     val_gt_paths = []
     val_pred_paths = []
 
-    # for file_name in tqdm(train_image_file_names):
-        # train_image_paths.append(os.path.join(train_image_dir, file_name))
-
-    # for file_name in tqdm(train_label_file_names):
-        # train_label_paths.append(os.path.join(train_label_dir, file_name))
-
-    # for file_name in tqdm(val_image_file_names):
-        # val_image_paths.append(os.path.join(val_image_dir, file_name))
-
-    # for file_name in tqdm(val_label_file_names):
-        # val_label_paths.append(os.path.join(val_label_dir, file_name))
-
-    # with open('E:/Dataset/LIP/list/train.txt', 'w') as file:
-        # for id in train_image_paths:
-            # file.write("%s\n" % id)
-
-    # with open('E:/Dataset/LIP/list/val.txt', 'w') as file:
-        # for id in val_image_paths:
-            # file.write("%s\n" % id)
-            
     f = open(val_id_list, 'r')
     for line in f:
         val = line.strip("\n")
         val_gt_paths.append(val_label_dir + val + '.png')
         val_pred_paths.append(val_output_dir + val + '.png')
 
-    #return train_image_paths, train_label_paths, val_image_paths, val_label_paths
     return val_pred_paths, val_gt_paths
 
 
@@ -139,6 +94,9 @@ def show_result(hist):
     freq = num_gt_pix / hist.sum()
     print('>>>', 'Freq Weighted IoU', (freq[freq > 0] * iu[freq > 0]).sum())
     print('=' * 50)
+
+    # Save confusion matrix
+    np.savetxt('.output/JPPNet-s2_CRF_CM.csv', hist, fmt='%4i', delimiter=',')
 
 
 if __name__ == '__main__':

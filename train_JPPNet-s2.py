@@ -12,15 +12,15 @@ import os
 os.environ['TF_CPP_MIN_LOG_LEVEL'] = '2'
 
 # Set gpus
-gpus = [0]  # Here I set CUDA to only see one GPU
+gpus = [0, 1]  # Here I set CUDA to see one/multiple GPU
 os.environ["CUDA_VISIBLE_DEVICES"] = ','.join([str(i) for i in gpus])
 num_gpus = len(gpus)  # number of GPUs to use
 
 # parameters setting
 N_CLASSES = 20
 INPUT_SIZE = (384, 384)
-BATCH_SIZE = 1
-BATCH_I = 1
+BATCH_SIZE = 2
+BATCH_I = 1    # Could be BATCH_SIZE/len(gpus), or less
 SHUFFLE = True
 RANDOM_SCALE = True
 RANDOM_MIRROR = True
@@ -42,85 +42,90 @@ LOG_DIR = './logs/JPPNet-s2'
 
 
 def main():
-    RANDOM_SEED = random.randint(1000, 9999)
-    tf.set_random_seed(RANDOM_SEED)
+    RANDOM_SEED = random.randint(1000, 9999)    # Generate a random number
+    tf.set_random_seed(RANDOM_SEED)    # Set graph-level seed, provide same sequence of random numbers if for a given random number generator
 
     # Create queue coordinator.
-    coord = tf.train.Coordinator()
-    h, w = INPUT_SIZE
+    coord = tf.train.Coordinator()     # Thread coordinator
+    h, w = INPUT_SIZE    # Height & Width of input
+
     # Load reader.
     with tf.name_scope("create_inputs"):
         reader = LIPReader(DATA_DIR, LIST_PATH, DATA_ID_LIST,
-                           INPUT_SIZE, RANDOM_SCALE, RANDOM_MIRROR, SHUFFLE, coord)
+                           INPUT_SIZE, RANDOM_SCALE, RANDOM_MIRROR, SHUFFLE, coord)    # Input reader, queue of batches of images, labels and heatmaps
         image_batch, label_batch, heatmap_batch = reader.dequeue(BATCH_SIZE)
         image_batch075 = tf.image.resize_images(
-            image_batch, [int(h * 0.75), int(w * 0.75)])
+            image_batch, [int(h * 0.75), int(w * 0.75)])    # Generate 0.75 scale of images
         image_batch050 = tf.image.resize_images(
-            image_batch, [int(h * 0.5), int(w * 0.5)])
-        heatmap_batch = tf.scalar_mul(1.0/255, heatmap_batch)
+            image_batch, [int(h * 0.5), int(w * 0.5)])    # Generate 0.50 scale of images
+        heatmap_batch = tf.scalar_mul(1.0/255, heatmap_batch)    # Multiply heatmap input
 
-    tower_grads = []
-    reuse1 = False
-    reuse2 = False
+    tower_grads = []    # Gradients from tower scopes
+    reuse1 = False    # Variable for managing GPUs
+    reuse2 = False    # Variable for managing GPUs
     # Define loss and optimisation parameters.
-    base_lr = tf.constant(LEARNING_RATE)
-    step_ph = tf.placeholder(dtype=tf.float32, shape=())
+    base_lr = tf.constant(LEARNING_RATE)    # Tensor for base learning rate
+    step_ph = tf.placeholder(dtype=tf.float32, shape=())    # Step placeholder tensor
     learning_rate = tf.scalar_mul(
-        base_lr, tf.pow((1 - step_ph / NUM_STEPS), POWER))
-    optim = tf.train.MomentumOptimizer(learning_rate, MOMENTUM)
+        base_lr, tf.pow((1 - step_ph / NUM_STEPS), POWER))    # Learning rate tensor, set to decay after specific steps
+    optim = tf.train.MomentumOptimizer(learning_rate, MOMENTUM)    # Optimizer: SGD + Momentum
 
-    for i in range(num_gpus):
-        with tf.device('/gpu:%d' % i):
-            with tf.name_scope('Tower_%d' % (i)) as scope:
+    check = tf.add_check_numerics_ops()    # Check numerics for NaN or Inf values
+    reduced_loss = None
+
+    for i in range(num_gpus):    # Iterate among defined GPUs
+        with tf.device('/gpu:%d' % i):    # Define specific GPU
+            with tf.name_scope('Tower_%d' % i) as scope:    # Set tower scope for the GPU
                 if i == 0:
                     reuse1 = False
                     reuse2 = True
                 else:
                     reuse1 = True
                     reuse2 = True
-                next_image = image_batch[i*BATCH_I:(i+1)*BATCH_I, :]
-                next_image075 = image_batch075[i*BATCH_I:(i+1)*BATCH_I, :]
-                next_image050 = image_batch050[i*BATCH_I:(i+1)*BATCH_I, :]
-                next_heatmap = heatmap_batch[i*BATCH_I:(i+1)*BATCH_I, :]
+                next_image = image_batch[i*BATCH_I:(i+1)*BATCH_I, :]    # Get a image from the input batch
+                next_image075 = image_batch075[i*BATCH_I:(i+1)*BATCH_I, :]    # Get the 0.75 scaled image input
+                next_image050 = image_batch050[i*BATCH_I:(i+1)*BATCH_I, :]    # Get the 0.50 scaled image input
+                next_heatmap = heatmap_batch[i*BATCH_I:(i+1)*BATCH_I, :]    # Get the heatmap for the input image
                 next_label = label_batch[i*BATCH_I:(i+1)*BATCH_I, :]
 
                 # Create network.
                 with tf.variable_scope('', reuse=reuse1):
                     net_100 = JPPNetModel(
-                        {'data': next_image}, is_training=False, n_classes=N_CLASSES)
+                        {'data': next_image}, is_training=False, n_classes=N_CLASSES)   # Network for input scale 1.0
                 with tf.variable_scope('', reuse=reuse2):
                     net_075 = JPPNetModel(
-                        {'data': next_image075}, is_training=False, n_classes=N_CLASSES)
+                        {'data': next_image075}, is_training=False, n_classes=N_CLASSES)  # Network for input scale 0.75
                 with tf.variable_scope('', reuse=reuse2):
                     net_050 = JPPNetModel(
-                        {'data': next_image050}, is_training=False, n_classes=N_CLASSES)
+                        {'data': next_image050}, is_training=False, n_classes=N_CLASSES)  # Network for input scale 0.50
 
                 # parsing net
-                parsing_fea1_100 = net_100.layers['res5d_branch2b_parsing']
-                parsing_fea1_075 = net_075.layers['res5d_branch2b_parsing']
-                parsing_fea1_050 = net_050.layers['res5d_branch2b_parsing']
+                parsing_fea1_100 = net_100.layers['res5d_branch2b_parsing']    # Parsing net for input scale 1.0
+                parsing_fea1_075 = net_075.layers['res5d_branch2b_parsing']    # Parsing net for input scale 0.75
+                parsing_fea1_050 = net_050.layers['res5d_branch2b_parsing']    # Parsing net for input scale 0.50
 
-                parsing_out1_100 = net_100.layers['fc1_human']
-                parsing_out1_075 = net_075.layers['fc1_human']
-                parsing_out1_050 = net_050.layers['fc1_human']
+                parsing_out1_100 = net_100.layers['fc1_human']    # Parsing output tensor for input scale 1.0
+                parsing_out1_075 = net_075.layers['fc1_human']    # Parsing output tensor for input scale 0.75
+                parsing_out1_050 = net_050.layers['fc1_human']    # Parsing output tensor for input scale 0.50
+
                 # pose net
-                resnet_fea_100 = net_100.layers['res4b22_relu']
-                resnet_fea_075 = net_075.layers['res4b22_relu']
-                resnet_fea_050 = net_050.layers['res4b22_relu']
+                resnet_fea_100 = net_100.layers['res4b22_relu']    # Pose net for input scale 1.0
+                resnet_fea_075 = net_075.layers['res4b22_relu']    # Pose net for input scale 0.75
+                resnet_fea_050 = net_050.layers['res4b22_relu']    # Pose net for input scale 0.50
 
-                with tf.variable_scope('', reuse=reuse1):
+                with tf.variable_scope('', reuse=reuse1):    # Pose and parsing output refining for input scale 1.0
                     pose_out1_100, pose_fea1_100 = pose_net(
-                        resnet_fea_100, 'fc1_pose')
+                        resnet_fea_100, 'fc1_pose')    # Pose output tensor for input scale 1.0
                     pose_out2_100, pose_fea2_100 = pose_refine(
-                        pose_out1_100, parsing_out1_100, pose_fea1_100, name='fc2_pose')
+                        pose_out1_100, parsing_out1_100, pose_fea1_100, name='fc2_pose')    # Pose refined output tensor for input scale 1.0
                     parsing_out2_100, parsing_fea2_100 = parsing_refine(
-                        parsing_out1_100, pose_out1_100, parsing_fea1_100, name='fc2_parsing')
+                        parsing_out1_100, pose_out1_100, parsing_fea1_100, name='fc2_parsing')    # Parsing refined output tensor for input scale 1.0
                     parsing_out3_100, parsing_fea3_100 = parsing_refine(
-                        parsing_out2_100, pose_out2_100, parsing_fea2_100, name='fc3_parsing')
+                        parsing_out2_100, pose_out2_100, parsing_fea2_100, name='fc3_parsing')    # Parsing double-refined output tensor for input scale 1.0
                     pose_out3_100, pose_fea3_100 = pose_refine(
-                        pose_out2_100, parsing_out2_100, pose_fea2_100, name='fc3_pose')
+                        pose_out2_100, parsing_out2_100, pose_fea2_100, name='fc3_pose')    # Pose double-refined output tensor for input scale 1.0
 
-                with tf.variable_scope('', reuse=reuse2):
+                with tf.variable_scope('', reuse=reuse2):    # Pose and parsing output refining for input scale 0.75
                     pose_out1_075, pose_fea1_075 = pose_net(
                         resnet_fea_075, 'fc1_pose')
                     pose_out2_075, pose_fea2_075 = pose_refine(
@@ -132,7 +137,7 @@ def main():
                     pose_out3_075, pose_fea3_075 = pose_refine(
                         pose_out2_075, parsing_out2_075, pose_fea2_075, name='fc3_pose')
 
-                with tf.variable_scope('', reuse=reuse2):
+                with tf.variable_scope('', reuse=reuse2):    # Pose and parsing output refining for input scale 0.50
                     pose_out1_050, pose_fea1_050 = pose_net(
                         resnet_fea_050, 'fc1_pose')
                     pose_out2_050, pose_fea2_050 = pose_refine(
@@ -144,7 +149,7 @@ def main():
                     pose_out3_050, pose_fea3_050 = pose_refine(
                         pose_out2_050, parsing_out2_050, pose_fea2_050, name='fc3_pose')
 
-                # combine resize
+                # combine resize (Combine different scales from each refining step)
                 parsing_out1 = tf.reduce_mean(tf.stack([parsing_out1_100,
                                                         tf.image.resize_images(
                                                             parsing_out1_075, tf.shape(parsing_out1_100)[1:3, ]),
@@ -170,7 +175,7 @@ def main():
                                                          pose_out3_075, tf.shape(pose_out3_100)[1:3, ]),
                                                      tf.image.resize_nearest_neighbor(pose_out3_050, tf.shape(pose_out3_100)[1:3, ])]), axis=0)
 
-                # Predictions: ignoring all predictions with labels greater or equal than n_classes
+                # Predictions: ignoring all predictions with labels greater or equal than n_classes - flatten prediction
                 raw_prediction_p1 = tf.reshape(parsing_out1, [-1, N_CLASSES])
                 raw_prediction_p1_100 = tf.reshape(
                     parsing_out1_100, [-1, N_CLASSES])
@@ -202,7 +207,7 @@ def main():
                 label_proc050 = prepare_label(next_label, tf.stack(
                     parsing_out1_050.get_shape()[1:3]), one_hot=False)
 
-                raw_gt = tf.reshape(label_proc, [-1, ])
+                raw_gt = tf.reshape(label_proc, [-1, ])  # [batch_size, flat]
                 raw_gt075 = tf.reshape(label_proc075, [-1, ])
                 raw_gt050 = tf.reshape(label_proc050, [-1, ])
 
@@ -217,21 +222,21 @@ def main():
                 gt075 = tf.cast(tf.gather(raw_gt075, indices075), tf.int32)
                 gt050 = tf.cast(tf.gather(raw_gt050, indices050), tf.int32)
 
-                prediction_p1 = tf.gather(raw_prediction_p1, indices)
-                prediction_p1_100 = tf.gather(raw_prediction_p1_100, indices)
+                prediction_p1 = tf.gather(raw_prediction_p1, indices)    # Parsing prediction 1st phase
+                prediction_p1_100 = tf.gather(raw_prediction_p1_100, indices)    # Parsing prediction for scale 1.0
                 prediction_p1_075 = tf.gather(
-                    raw_prediction_p1_075, indices075)
+                    raw_prediction_p1_075, indices075)    # Parsing prediction for scale 0.75
                 prediction_p1_050 = tf.gather(
-                    raw_prediction_p1_050, indices050)
+                    raw_prediction_p1_050, indices050)    # Parsing prediction for scale 0.50
 
-                prediction_p2 = tf.gather(raw_prediction_p2, indices)
+                prediction_p2 = tf.gather(raw_prediction_p2, indices)    # Parsing prediction 2nd phase
                 prediction_p2_100 = tf.gather(raw_prediction_p2_100, indices)
                 prediction_p2_075 = tf.gather(
                     raw_prediction_p2_075, indices075)
                 prediction_p2_050 = tf.gather(
                     raw_prediction_p2_050, indices050)
 
-                prediction_p3 = tf.gather(raw_prediction_p3, indices)
+                prediction_p3 = tf.gather(raw_prediction_p3, indices)    # Parsing prediction 3rd phase
                 prediction_p3_100 = tf.gather(raw_prediction_p3_100, indices)
                 prediction_p3_075 = tf.gather(
                     raw_prediction_p3_075, indices075)
@@ -239,13 +244,13 @@ def main():
                     raw_prediction_p3_050, indices050)
 
                 next_heatmap075 = tf.image.resize_nearest_neighbor(
-                    next_heatmap, pose_out1_075.get_shape()[1:3])
+                    next_heatmap, pose_out1_075.get_shape()[1:3])    # heatmap scale 0.75
                 next_heatmap050 = tf.image.resize_nearest_neighbor(
-                    next_heatmap, pose_out1_050.get_shape()[1:3])
+                    next_heatmap, pose_out1_050.get_shape()[1:3])    # heatmap scale 0.50
 
                 # Pixel-wise softmax loss.
                 loss_p1 = tf.reduce_mean(tf.nn.sparse_softmax_cross_entropy_with_logits(
-                    logits=prediction_p1, labels=gt))
+                    logits=prediction_p1, labels=gt))    # Parsing prediction loss
                 loss_p1_100 = tf.reduce_mean(tf.nn.sparse_softmax_cross_entropy_with_logits(
                     logits=prediction_p1_100, labels=gt))
                 loss_p1_075 = tf.reduce_mean(tf.nn.sparse_softmax_cross_entropy_with_logits(
@@ -272,7 +277,7 @@ def main():
                     logits=prediction_p3_050, labels=gt050))
 
                 loss_s1 = tf.reduce_mean(tf.sqrt(tf.reduce_sum(
-                    tf.square(tf.subtract(next_heatmap, pose_out1)), [1, 2, 3])))
+                    tf.square(tf.subtract(next_heatmap, pose_out1)), [1, 2, 3])))    # Pose prediction loss
                 loss_s1_100 = tf.reduce_mean(tf.sqrt(tf.reduce_sum(
                     tf.square(tf.subtract(next_heatmap, pose_out1_100)), [1, 2, 3])))
                 loss_s1_075 = tf.reduce_mean(tf.sqrt(tf.reduce_sum(
@@ -299,16 +304,16 @@ def main():
                     tf.square(tf.subtract(next_heatmap050, pose_out3_050)), [1, 2, 3])))
 
                 loss_parsing = loss_p1 + loss_p1_100 + loss_p1_075 + loss_p1_050 + loss_p2 + loss_p2_100 + \
-                    loss_p2_075 + loss_p2_050 + loss_p3 + loss_p3_100 + loss_p3_075 + loss_p3_050
+                    loss_p2_075 + loss_p2_050 + loss_p3 + loss_p3_100 + loss_p3_075 + loss_p3_050    # Total parsing prediction loss
                 loss_pose = loss_s1 + loss_s1_100 + loss_s1_075 + loss_s1_050 + loss_s2 + loss_s2_100 + \
-                    loss_s2_075 + loss_s2_050 + loss_s3 + loss_s3_100 + loss_s3_075 + loss_s3_050
-                reduced_loss = loss_pose * s_Weight + loss_parsing * p_Weight
+                    loss_s2_075 + loss_s2_050 + loss_s3 + loss_s3_100 + loss_s3_075 + loss_s3_050    # Total pose prediction loss
+                reduced_loss = loss_pose * s_Weight + loss_parsing * p_Weight     # Total loss
 
                 trainable_variable = tf.trainable_variables()
                 grads = optim.compute_gradients(
-                    reduced_loss, var_list=trainable_variable)
+                    reduced_loss, var_list=trainable_variable)    # Compute gradients of current gpu
 
-                tower_grads.append(grads)
+                tower_grads.append(grads)    # Append gradients of current gpu
 
                 tf.add_to_collection('loss_p1', loss_p1)
                 tf.add_to_collection('loss_p2', loss_p2)
@@ -318,10 +323,13 @@ def main():
                 tf.add_to_collection('loss_s3', loss_s3)
                 tf.add_to_collection('reduced_loss', reduced_loss)
 
+                # Define debugging points
+                debug = tf.debugging.check_numerics(parsing_out1_100, "Debug check: ")
+
     # Average the gradients
-    grads_ave = average_gradients(tower_grads)
+    grads_ave = average_gradients(tower_grads)     # average gradients
     # apply the gradients with our optimizers
-    train_op = optim.apply_gradients(grads_ave)
+    train_op = optim.apply_gradients(grads_ave)    # optimizer
 
     loss_p1_ave = tf.reduce_mean(tf.get_collection('loss_p1'))
     loss_p2_ave = tf.reduce_mean(tf.get_collection('loss_p2'))
@@ -341,12 +349,12 @@ def main():
     loss_summary = tf.summary.merge([loss_summary_ave, loss_summary_s1, loss_summary_s2,
                                      loss_summary_s3, loss_summary_p1, loss_summary_p2, loss_summary_p3])
     summary_writer = tf.summary.FileWriter(
-        LOG_DIR, graph=tf.get_default_graph())
+        LOG_DIR, graph=tf.get_default_graph())    # Graph summary
 
     # Set up tf session and initialize variables.
-    config = tf.ConfigProto(allow_soft_placement=True,
-                            log_device_placement=False)
-    config.gpu_options.allow_growth = True
+    config = tf.ConfigProto(allow_soft_placement=True,    # Operation will be placed on CPU if no GPU implementation
+                            log_device_placement=False)    # No verbose log/output with device id
+    config.gpu_options.allow_growth = True    # Allow runtime GPU memory growth
     sess = tf.Session(config=config)
     init = tf.global_variables_initializer()
     sess.run(init)
@@ -373,15 +381,16 @@ def main():
         feed_dict = {step_ph: step}
 
         # Apply gradients.
-        summary, loss_value, _ = sess.run(
-            [loss_summary, reduced_loss, train_op], feed_dict=feed_dict)
-        summary_writer.add_summary(summary, step)
+        summary, loss_value, _, check_out, debug_out = sess.run(
+            [loss_summary, reduced_loss, train_op, check, debug], feed_dict=feed_dict)
+        summary_writer.add_summary(summary, step)    # Write to summary
         if step % SAVE_PRED_EVERY == 0:
-            save(saver, sess, SNAPSHOT_DIR, step)
+            save(saver, sess, SNAPSHOT_DIR, step)    # Save model
 
-        duration = time.time() - start_time
+        duration = time.time() - start_time    # Calculate step time
         print(
-            'step {:d} \t loss = {:.3f}, ({:.3f} sec/step)'.format(step, loss_value, duration))
+            'step {:d} \t loss = {:.6f}, ({:.3f} sec/step)'.format(step, loss_value, duration))
+        # print(check_out, debug_out)
     coord.request_stop()
     coord.join(threads)
 
