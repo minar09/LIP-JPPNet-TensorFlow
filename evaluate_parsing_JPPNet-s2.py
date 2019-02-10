@@ -20,17 +20,11 @@ os.environ['TF_CPP_MIN_LOG_LEVEL'] = '2'
 
 N_CLASSES = 20
 INPUT_SIZE = (384, 384)
-#DATA_DIRECTORY = './datasets/examples'
-DATA_DIRECTORY = 'E:/Dataset/LIP/validation'
-#DATA_DIRECTORY = './datasets/lip'
-#DATA_LIST_PATH = './datasets/examples/list/val.txt'
-DATA_LIST_PATH = 'E:/Dataset/LIP/list/val.txt'
-#DATA_LIST_PATH = './datasets/lip/list/val.txt'
-# NUM_STEPS = 6 # Number of images in the validation set.
+DATA_DIRECTORY = 'D:/Datasets/LIP/validation'
+DATA_LIST_PATH = 'D:/Datasets/LIP/list/val.txt'
 NUM_STEPS = 10000  # Number of images in the validation set.
 RESTORE_FROM = './checkpoint/JPPNet-s2'
-#OUTPUT_DIR = './output/parsing/val'
-OUTPUT_DIR = 'E:/Dataset/LIP/output/parsing/val'
+OUTPUT_DIR = 'D:/Datasets/LIP/output/parsing/val'
 
 if not os.path.exists(OUTPUT_DIR):
     os.makedirs(OUTPUT_DIR)

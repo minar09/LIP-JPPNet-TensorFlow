@@ -12,38 +12,37 @@ import os
 os.environ['TF_CPP_MIN_LOG_LEVEL'] = '2'
 
 # Set gpus
-gpus = [0, 1]  # Here I set CUDA to see one/multiple GPU
-os.environ["CUDA_VISIBLE_DEVICES"] = ','.join([str(i) for i in gpus])
-num_gpus = len(gpus)  # number of GPUs to use
+GPU_LIST = [0]  # Here I set CUDA to see one/multiple GPU
+os.environ["CUDA_VISIBLE_DEVICES"] = ','.join([str(i) for i in GPU_LIST])
+NUM_GPU = len(GPU_LIST)  # number of GPUs to use
 
 # parameters setting
 N_CLASSES = 20
 INPUT_SIZE = (384, 384)
-BATCH_SIZE = 2
-BATCH_I = 1    # Could be BATCH_SIZE/len(gpus), or less
+BATCH_SIZE = 32
+BATCH_ITERATION = BATCH_SIZE // NUM_GPU
 SHUFFLE = True
 RANDOM_SCALE = True
 RANDOM_MIRROR = True
 LEARNING_RATE = 1e-4
 MOMENTUM = 0.9
 POWER = 0.9
-NUM_STEPS = 7616 * 35 + 1
-SAVE_PRED_EVERY = 7616
+NUM_IMAGES = 30462
+SAVE_PRED_EVERY = NUM_IMAGES // BATCH_SIZE
+NUM_EPOCHS = 5
+NUM_STEPS = SAVE_PRED_EVERY * NUM_EPOCHS
 p_Weight = 1
 s_Weight = 1
-#DATA_DIR = './datasets/lip'
-DATA_DIR = 'E:/Dataset/LIP/training'
-#LIST_PATH = './datasets/lip/list/train_rev.txt'
-LIST_PATH = 'E:/Dataset/LIP/list/train_rev.txt'
-#DATA_ID_LIST = './datasets/lip/list/train_id.txt'
-DATA_ID_LIST = 'E:/Dataset/LIP/list/train_id.txt'
+DATA_DIR = 'D:/Datasets/LIP/training'
+LIST_PATH = 'D:/Datasets/LIP/list/train_rev.txt'
+DATA_ID_LIST = 'D:/Datasets/LIP/list/train_id.txt'
 SNAPSHOT_DIR = './checkpoint/JPPNet-s2'
 LOG_DIR = './logs/JPPNet-s2'
 
 
 def main():
-    RANDOM_SEED = random.randint(1000, 9999)    # Generate a random number
-    tf.set_random_seed(RANDOM_SEED)    # Set graph-level seed, provide same sequence of random numbers if for a given random number generator
+    random_seed = random.randint(1000, 9999)    # Generate a random number
+    tf.set_random_seed(random_seed)    # Set graph-level seed, provide same sequence of random numbers if for a given random number generator
 
     # Create queue coordinator.
     coord = tf.train.Coordinator()     # Thread coordinator
@@ -72,8 +71,9 @@ def main():
 
     check = tf.add_check_numerics_ops()    # Check numerics for NaN or Inf values
     reduced_loss = None
+    debug = None
 
-    for i in range(num_gpus):    # Iterate among defined GPUs
+    for i in range(NUM_GPU):    # Iterate among defined GPUs
         with tf.device('/gpu:%d' % i):    # Define specific GPU
             with tf.name_scope('Tower_%d' % i) as scope:    # Set tower scope for the GPU
                 if i == 0:
@@ -82,11 +82,11 @@ def main():
                 else:
                     reuse1 = True
                     reuse2 = True
-                next_image = image_batch[i*BATCH_I:(i+1)*BATCH_I, :]    # Get a image from the input batch
-                next_image075 = image_batch075[i*BATCH_I:(i+1)*BATCH_I, :]    # Get the 0.75 scaled image input
-                next_image050 = image_batch050[i*BATCH_I:(i+1)*BATCH_I, :]    # Get the 0.50 scaled image input
-                next_heatmap = heatmap_batch[i*BATCH_I:(i+1)*BATCH_I, :]    # Get the heatmap for the input image
-                next_label = label_batch[i*BATCH_I:(i+1)*BATCH_I, :]
+                next_image = image_batch[i * BATCH_ITERATION:(i + 1) * BATCH_ITERATION, :]    # Get a image from the input batch
+                next_image075 = image_batch075[i * BATCH_ITERATION:(i + 1) * BATCH_ITERATION, :]    # Get the 0.75 scaled image input
+                next_image050 = image_batch050[i * BATCH_ITERATION:(i + 1) * BATCH_ITERATION, :]    # Get the 0.50 scaled image input
+                next_heatmap = heatmap_batch[i * BATCH_ITERATION:(i + 1) * BATCH_ITERATION, :]    # Get the heatmap for the input image
+                next_label = label_batch[i * BATCH_ITERATION:(i + 1) * BATCH_ITERATION, :]
 
                 # Create network.
                 with tf.variable_scope('', reuse=reuse1):

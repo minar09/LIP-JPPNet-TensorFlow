@@ -7,7 +7,7 @@ from scipy.stats import multivariate_normal
 import scipy.io as sio
 import csv
 
-#csv_file = 'lip_train_set.csv'
+# csv_file = 'lip_train_set.csv'
 csv_file = 'lip_val_set.csv'
 
 with open(csv_file, "r") as input_file:
@@ -17,9 +17,8 @@ with open(csv_file, "r") as input_file:
         img_id = row.pop(0)[:-4]
         print(img_id)
 
-        #image_path = './images/{}.jpg'.format(img_id)
-        #image_path = 'E:/Dataset/LIP/images/train_images/{}.jpg'.format(img_id)
-        image_path = 'E:/Dataset/LIP/images/val_images/{}.jpg'.format(img_id)
+        # image_path = 'D:/Datasets/LIP/training/images/{}.jpg'.format(img_id)
+        image_path = 'D:/Datasets/LIP/validation/images/{}.jpg'.format(img_id)
         img = scipy.misc.imread(image_path).astype(np.float)
         rows = img.shape[0]
         cols = img.shape[1]
@@ -46,8 +45,7 @@ with open(csv_file, "r") as input_file:
                         for j in range(l2, r2):
                             heatmap_[i, j, int(idx / 3)
                                      ] = var.pdf([i, j]) * 400
-                #save_path = 'E:/Dataset/LIP/heatmap/train_maps/{}_{}.png'.format(img_id, int(idx/3))
-                save_path = 'E:/Dataset/LIP/heatmap/val_maps/{}_{}.png'.format(
-                    img_id, int(idx/3))
+                # save_path = 'D:/Datasets/LIP/training/heatmaps/{}_{}.png'.format(img_id, int(idx/3))
+                save_path = 'D:/Datasets/LIP/validation/heatmaps/{}_{}.png'.format(img_id, int(idx/3))
                 scipy.misc.imsave(save_path, heatmap_[:, :, int(idx/3)])
         heatsum_ = np.sum(heatmap_, axis=2)
