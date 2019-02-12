@@ -46,6 +46,7 @@ with open(csv_file, "r") as input_file:
                             heatmap_[i, j, int(idx / 3)
                                      ] = var.pdf([i, j]) * 400
                 # save_path = 'D:/Datasets/LIP/training/heatmaps/{}_{}.png'.format(img_id, int(idx/3))
-                save_path = 'D:/Datasets/LIP/validation/heatmaps/{}_{}.png'.format(img_id, int(idx/3))
+                save_path = 'D:/Datasets/LIP/validation/heatmaps/{}_{}.png'.format(
+                    img_id, int(idx/3))
                 scipy.misc.imsave(save_path, heatmap_[:, :, int(idx/3)])
         heatsum_ = np.sum(heatmap_, axis=2)

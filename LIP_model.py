@@ -67,9 +67,10 @@ def parsing_refine(parsing, pose, parsing_fea, name):
                                relu=True, bn=is_BN, name='parsing_conv3')
         parsing_conv4 = conv2d(parsing_conv3, 256, 9, 1,
                                relu=True, bn=is_BN, name='parsing_conv4')
-
         parsing_conv5 = conv2d(parsing_conv4, 256, 1, 1,
                                relu=True, bn=is_BN, name='parsing_conv5')
+
+        # ASPP
         parsing_human1 = atrous_conv2d(
             parsing_conv5, 20, 3, rate=6, relu=False, name='parsing_human1')
         parsing_human2 = atrous_conv2d(

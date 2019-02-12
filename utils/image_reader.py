@@ -4,7 +4,8 @@ import numpy as np
 import tensorflow as tf
 
 IGNORE_LABEL = 255
-IMG_MEAN = np.array((104.00698793, 116.66876762, 122.67891434), dtype=np.float32)
+IMG_MEAN = np.array((104.00698793, 116.66876762,
+                     122.67891434), dtype=np.float32)
 
 
 def image_scaling(img, label):
@@ -16,12 +17,14 @@ def image_scaling(img, label):
       label: Segmentation mask to scale.
     """
 
-    scale = tf.random_uniform([1], minval=0.5, maxval=1.5, dtype=tf.float32, seed=None)
+    scale = tf.random_uniform(
+        [1], minval=0.5, maxval=1.5, dtype=tf.float32, seed=None)
     h_new = tf.to_int32(tf.multiply(tf.to_float(tf.shape(img)[0]), scale))
     w_new = tf.to_int32(tf.multiply(tf.to_float(tf.shape(img)[1]), scale))
     new_shape = tf.squeeze(tf.stack([h_new, w_new]), squeeze_dims=[1])
     img = tf.image.resize_images(img, new_shape)
-    label = tf.image.resize_nearest_neighbor(tf.expand_dims(label, 0), new_shape)
+    label = tf.image.resize_nearest_neighbor(
+        tf.expand_dims(label, 0), new_shape)
     label = tf.squeeze(label, squeeze_dims=[0])
 
     return img, label
@@ -36,7 +39,8 @@ def image_mirroring(img, label):
       label: Segmentation mask to mirror.
     """
 
-    distort_left_right_random = tf.random_uniform([1], 0, 1.0, dtype=tf.float32)[0]
+    distort_left_right_random = tf.random_uniform(
+        [1], 0, 1.0, dtype=tf.float32)[0]
     mirror = tf.less(tf.stack([1.0, distort_left_right_random, 1.0]), 0.5)
     img = tf.reverse(img, mirror)
     reversed_label = tf.reverse(label, mirror)
@@ -57,7 +61,8 @@ def random_crop_and_pad_image_and_labels(image, label, crop_h, crop_w, ignore_la
     """
 
     label = tf.cast(label, dtype=tf.float32)
-    label = label - ignore_label  # Needs to be subtracted and later added due to 0 padding.
+    # Needs to be subtracted and later added due to 0 padding.
+    label = label - ignore_label
     combined = tf.concat([image, label], 2)
     image_shape = tf.shape(image)
     combined_pad = tf.image.pad_to_bounding_box(combined, 0, 0, tf.maximum(crop_h, image_shape[0]),
@@ -98,7 +103,8 @@ def read_labeled_image_list(data_dir, data_list):
     return images
 
 
-def read_images_from_disk(input_queue, input_size, random_scale, random_mirror):  # optional pre-processing arguments
+# optional pre-processing arguments
+def read_images_from_disk(input_queue, input_size, random_scale, random_mirror):
     """Read one image and its corresponding mask with optional pre-processing.
 
     Args:
@@ -147,11 +153,13 @@ class ImageReader(object):
         self.input_size = input_size
         self.coord = coord
 
-        self.image_list = read_labeled_image_list(self.data_dir, self.data_list)
+        self.image_list = read_labeled_image_list(
+            self.data_dir, self.data_list)
         self.images = tf.convert_to_tensor(self.image_list, dtype=tf.string)
         self.queue = tf.train.slice_input_producer([self.images],
                                                    shuffle=input_size is not None)  # not shuffling if it is val
-        self.image = read_images_from_disk(self.queue, self.input_size, random_scale, random_mirror)
+        self.image = read_images_from_disk(
+            self.queue, self.input_size, random_scale, random_mirror)
 
     def dequeue(self, num_elements):
         '''Pack images and labels into a batch.

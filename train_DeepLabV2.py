@@ -1,8 +1,6 @@
 from __future__ import print_function
-import os
+
 import time
-import tensorflow as tf
-import numpy as np
 import random
 from utils import *
 from LIP_model import *
@@ -37,7 +35,8 @@ LOG_DIR = './logs/DeepLabV2'
 
 def main():
     random_seed = random.randint(1000, 9999)    # Generate a random number
-    tf.set_random_seed(random_seed)    # Set graph-level seed, provide same sequence of random numbers if for a given random number generator
+    # Set graph-level seed, provide same sequence of random numbers if for a given random number generator
+    tf.set_random_seed(random_seed)
 
     # Create queue coordinator.
     coord = tf.train.Coordinator()     # Thread coordinator
@@ -46,7 +45,7 @@ def main():
     # Load reader.
     with tf.name_scope("create_inputs"):
         reader = ParsingReader(DATA_DIR, LIST_PATH, DATA_ID_LIST,
-                           INPUT_SIZE, RANDOM_SCALE, RANDOM_MIRROR, SHUFFLE, coord, N_CLASSES)    # Input reader, queue of batches of images, labels and heatmaps
+                               INPUT_SIZE, RANDOM_SCALE, RANDOM_MIRROR, SHUFFLE, coord, N_CLASSES)    # Input reader, queue of batches of images, labels and heatmaps
         image_batch, label_batch = reader.dequeue(BATCH_SIZE)
         image_batch075 = tf.image.resize_images(
             image_batch, [int(h * 0.75), int(w * 0.75)])    # Generate 0.75 scale of images
@@ -55,10 +54,12 @@ def main():
 
     # Define loss and optimisation parameters.
     base_lr = tf.constant(LEARNING_RATE)    # Tensor for base learning rate
-    step_ph = tf.placeholder(dtype=tf.float32, shape=())    # Step placeholder tensor
+    # Step placeholder tensor
+    step_ph = tf.placeholder(dtype=tf.float32, shape=())
     learning_rate = tf.scalar_mul(
         base_lr, tf.pow((1 - step_ph / NUM_STEPS), POWER))    # Learning rate tensor, set to decay after specific steps
-    optim = tf.train.MomentumOptimizer(learning_rate, MOMENTUM)    # Optimizer: SGD + Momentum
+    optim = tf.train.MomentumOptimizer(
+        learning_rate, MOMENTUM)    # Optimizer: SGD + Momentum
 
     next_image = image_batch    # Get a image from the input batch
     next_image075 = image_batch075    # Get the 0.75 scaled image input
@@ -78,9 +79,12 @@ def main():
         net_050 = JPPNetModel(
             {'data': next_image050}, is_training=False, n_classes=N_CLASSES)  # Network for input scale 0.50
 
-    parsing_out1_100 = net_100.layers['fc1_human']    # Parsing output tensor for input scale 1.0
-    parsing_out1_075 = net_075.layers['fc1_human']    # Parsing output tensor for input scale 0.75
-    parsing_out1_050 = net_050.layers['fc1_human']    # Parsing output tensor for input scale 0.50
+    # Parsing output tensor for input scale 1.0
+    parsing_out1_100 = net_100.layers['fc1_human']
+    # Parsing output tensor for input scale 0.75
+    parsing_out1_075 = net_075.layers['fc1_human']
+    # Parsing output tensor for input scale 0.50
+    parsing_out1_050 = net_050.layers['fc1_human']
 
     # combine resize (Combine different scales from each refining step)
     parsing_out1 = tf.reduce_mean(tf.stack([parsing_out1_100,
@@ -119,8 +123,10 @@ def main():
     gt075 = tf.cast(tf.gather(raw_gt075, indices075), tf.int32)
     gt050 = tf.cast(tf.gather(raw_gt050, indices050), tf.int32)
 
-    prediction_p1 = tf.gather(raw_prediction_p1, indices)    # Parsing prediction 1st phase
-    prediction_p1_100 = tf.gather(raw_prediction_p1_100, indices)    # Parsing prediction for scale 1.0
+    # Parsing prediction 1st phase
+    prediction_p1 = tf.gather(raw_prediction_p1, indices)
+    # Parsing prediction for scale 1.0
+    prediction_p1_100 = tf.gather(raw_prediction_p1_100, indices)
     prediction_p1_075 = tf.gather(
         raw_prediction_p1_075, indices075)    # Parsing prediction for scale 0.75
     prediction_p1_050 = tf.gather(
@@ -192,7 +198,8 @@ def main():
 
         if step % SHOW_STEP == 0:
             duration = time.time() - start_time    # Calculate step time
-            print('step {:d} \t loss = {:.6f}, ({:.3f} sec/step)'.format(step, loss_value, duration))
+            print(
+                'step {:d} \t loss = {:.6f}, ({:.3f} sec/step)'.format(step, loss_value, duration))
 
     coord.request_stop()
     coord.join(threads)

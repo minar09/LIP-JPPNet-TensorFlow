@@ -1,26 +1,26 @@
 ## Joint Body Parsing & Pose Estimation Network (JPPNet)
-Xiaodan Liang, Ke Gong, Xiaohui Shen, and Liang Lin, "Look into Person: Joint Body Parsing & Pose Estimation Network and A New Benchmark", T-PAMI 2018.
+Xiaodan Liang, Ke Gong, Xiaohui Shen, and Liang Lin, "Look into Person: Joint Body Parsing & Pose Estimation Network and A New Benchmark", T-PAMI 2018. [LIP_JPPNet](https://github.com/Engineering-Course/LIP_JPPNet)
 
 ### Introduction
 
-JPPNet is a state-of-art deep learning methord for human parsing and pose estimation built on top of [Tensorflow](http://www.tensorflow.org).
+JPPNet is a state-of-art deep learning method for human parsing and pose estimation built on top of [Tensorflow](http://www.tensorflow.org).
 
 This novel joint human parsing and pose estimation network incorporates the multiscale feature connections and iterative location refinement in an end-to-end framework to investigate efficient context modeling and then enable parsing and pose tasks that are mutually beneficial to each other. This unified framework achieves state-of-the-art performance for both human parsing and pose estimation tasks. 
 
 
-This distribution provides a publicly available implementation for the key model ingredients reported in our latest [paper](https://arxiv.org/pdf/1804.01984.pdf) which is accepted by T-PAMI 2018.
+This distribution provides a publicly available implementation for the key model ingredients reported in [paper](https://arxiv.org/pdf/1804.01984.pdf) which is accepted by T-PAMI 2018.
 
-We simplify the network to solve human parsing by exploring a novel self-supervised structure-sensitive learning approach, which imposes human pose structures into the parsing results without resorting to extra supervision. There is also a public implementation of this self-supervised structure-sensitive JPPNet ([SS-JPPNet](https://github.com/Engineering-Course/LIP_SSL)).
+We simplify the network to solve human parsing by exploring a novel self-supervised structure-sensitive learning approach, which imposes human pose structures into the parsing results without resorting to extra supervision. There is also a public implementation (Caffe) of this self-supervised structure-sensitive JPPNet ([SS-JPPNet](https://github.com/Engineering-Course/LIP_SSL)).
 
 
 ### Look into People (LIP) Dataset
 
-The SSL is trained and evaluated on our [LIP dataset](http://www.sysu-hcp.net/lip) for human parsing.  Please check it for more model details. The dataset is also available at [google drive](https://drive.google.com/drive/folders/0BzvH3bSnp3E9ZW9paE9kdkJtM3M?usp=sharing) and [baidu drive](http://pan.baidu.com/s/1nvqmZBN).
+The SSL is trained and evaluated on [LIP dataset](http://www.sysu-hcp.net/lip) for human parsing.  Please check it for more model details. The dataset is also available at [google drive](https://drive.google.com/drive/folders/0BzvH3bSnp3E9ZW9paE9kdkJtM3M?usp=sharing) and [baidu drive](http://pan.baidu.com/s/1nvqmZBN).
 
 
 ### Pre-trained models
 
-We have released our trained models of JPPNet on LIP dataset at [google drive](https://drive.google.com/open?id=1BFVXgeln-bek8TCbRjN6utPAgRE0LJZg) and [baidu drive](https://pan.baidu.com/s/1hQvg1TMIt0JA0yMfjyzQgQ).
+There is a release of trained models of JPPNet on LIP dataset at [google drive](https://drive.google.com/open?id=1BFVXgeln-bek8TCbRjN6utPAgRE0LJZg) and [baidu drive](https://pan.baidu.com/s/1hQvg1TMIt0JA0yMfjyzQgQ).
 
 
 
@@ -39,7 +39,7 @@ We have released our trained models of JPPNet on LIP dataset at [google drive](h
 6. Note that the LIPReader class is only suit for labels in LIP for the left-right flipping augmentation. If you want to train on other datasets with different labels, you may have to re-write an image reader class.
 
 ## Citation
-If you use this code for your research, please cite our papers.
+If you use this code for your research, please cite these papers.
 ```
 @article{liang2018look,
   title={Look into Person: Joint Body Parsing \& Pose Estimation Network and a New Benchmark},

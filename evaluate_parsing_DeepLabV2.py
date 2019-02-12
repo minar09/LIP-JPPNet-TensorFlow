@@ -40,7 +40,7 @@ def main():
     # Load reader.
     with tf.name_scope("create_inputs"):
         reader = ParsingReader(DATA_DIRECTORY, DATA_LIST_PATH, DATA_ID_LIST,
-                             None, False, False, False, coord, N_CLASSES)
+                               None, False, False, False, coord, N_CLASSES)
         image = reader.image
         image_rev = tf.reverse(image, tf.stack([1]))
         image_list = reader.image_list

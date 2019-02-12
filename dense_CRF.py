@@ -38,7 +38,7 @@ except ImportError:
 # OUTPUT_DIR = 'E:/Dataset/LIP/output/JPPNet_parsing/val_crf/'
 OUTPUT_DIR = 'E:/Dataset/LIP/output/parsing/val_crf/'
 if not os.path.exists(OUTPUT_DIR):
-        os.makedirs(OUTPUT_DIR)
+    os.makedirs(OUTPUT_DIR)
 
 n_classes = 20
 # colour map
@@ -100,7 +100,7 @@ def crf(fn_im, fn_anno, fn_output, NUM_OF_CLASSES=n_classes, use_2d=True):
     ### Read images and annotation ###
     ##################################
     img = imread(fn_im)
-    #print(fn_anno.shape)
+    # print(fn_anno.shape)
 
     # Convert the annotation's RGB color to a single 32-bit integer color 0xBBGGRR
     anno_rgb = imread(fn_anno).astype(np.uint32)
@@ -117,9 +117,9 @@ def crf(fn_im, fn_anno, fn_output, NUM_OF_CLASSES=n_classes, use_2d=True):
     # HAS_UNK = 0 in colors
     HAS_UNK = False
     # if HAS_UNK:
-        #print("Found a full-black pixel in annotation image, assuming it means 'unknown' label, and will thus not be present in the output!")
-        #print("If 0 is an actual label for you, consider writing your own code, or simply giving your labels only non-zero values.")
-        #colors = colors[1:]
+    #print("Found a full-black pixel in annotation image, assuming it means 'unknown' label, and will thus not be present in the output!")
+    #print("If 0 is an actual label for you, consider writing your own code, or simply giving your labels only non-zero values.")
+    #colors = colors[1:]
     # else:
     #    print("No single full-black pixel found in annotation image. Assuming there's no 'unknown' label!")
 
@@ -204,8 +204,8 @@ def crf(fn_im, fn_anno, fn_output, NUM_OF_CLASSES=n_classes, use_2d=True):
     MAP = np.argmax(Q, axis=0)
     # print(MAP.shape)
     crfoutput = MAP.reshape((img.shape[0], img.shape[1]))
-    #print(crfoutput.shape)
-    #print(np.unique(crfoutput))
+    # print(crfoutput.shape)
+    # print(np.unique(crfoutput))
 
     # Convert the MAP (labels) back to the corresponding colors and save the image.
     # Note that there is no "unknown" here anymore, no matter what we had at first.
@@ -225,7 +225,7 @@ def crf(fn_im, fn_anno, fn_output, NUM_OF_CLASSES=n_classes, use_2d=True):
     # for i in range(5):
     # print("KL-divergence at {}: {}".format(i, d.klDivergence(Q)))
     # d.stepInference(Q, tmp1, tmp2)
-    
+
     # return crfimage, crfoutput
 
 
