@@ -19,7 +19,7 @@ NUM_GPU = len(GPU_LIST)  # number of GPUs to use
 # parameters setting
 N_CLASSES = 20
 INPUT_SIZE = (384, 384)
-BATCH_SIZE = 32
+BATCH_SIZE = 3
 BATCH_ITERATION = BATCH_SIZE // NUM_GPU
 SHUFFLE = True
 RANDOM_SCALE = True
@@ -29,7 +29,7 @@ MOMENTUM = 0.9
 POWER = 0.9
 NUM_IMAGES = 30462
 SAVE_PRED_EVERY = NUM_IMAGES // BATCH_SIZE
-NUM_EPOCHS = 5
+NUM_EPOCHS = 30
 NUM_STEPS = SAVE_PRED_EVERY * NUM_EPOCHS
 p_Weight = 1
 s_Weight = 1
@@ -69,9 +69,9 @@ def main():
         base_lr, tf.pow((1 - step_ph / NUM_STEPS), POWER))    # Learning rate tensor, set to decay after specific steps
     optim = tf.train.MomentumOptimizer(learning_rate, MOMENTUM)    # Optimizer: SGD + Momentum
 
-    check = tf.add_check_numerics_ops()    # Check numerics for NaN or Inf values
+    # check = tf.add_check_numerics_ops()    # Check numerics for NaN or Inf values
     reduced_loss = None
-    debug = None
+    # debug = None
 
     for i in range(NUM_GPU):    # Iterate among defined GPUs
         with tf.device('/gpu:%d' % i):    # Define specific GPU
@@ -324,7 +324,7 @@ def main():
                 tf.add_to_collection('reduced_loss', reduced_loss)
 
                 # Define debugging points
-                debug = tf.debugging.check_numerics(parsing_out1_100, "Debug check: ")
+                # debug = tf.debugging.check_numerics(parsing_out1_100, "Debug check: ")
 
     # Average the gradients
     grads_ave = average_gradients(tower_grads)     # average gradients
@@ -381,8 +381,8 @@ def main():
         feed_dict = {step_ph: step}
 
         # Apply gradients.
-        summary, loss_value, _, check_out, debug_out = sess.run(
-            [loss_summary, reduced_loss, train_op, check, debug], feed_dict=feed_dict)
+        summary, loss_value, _ = sess.run(
+            [loss_summary, reduced_loss, train_op], feed_dict=feed_dict)
         summary_writer.add_summary(summary, step)    # Write to summary
         if step % SAVE_PRED_EVERY == 0:
             save(saver, sess, SNAPSHOT_DIR, step)    # Save model

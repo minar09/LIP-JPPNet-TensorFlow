@@ -22,8 +22,9 @@ N_CLASSES = 20
 INPUT_SIZE = (384, 384)
 DATA_DIRECTORY = 'D:/Datasets/LIP/validation'
 DATA_LIST_PATH = 'D:/Datasets/LIP/list/val.txt'
+DATA_ID_LIST = 'D:/Datasets/LIP/list/val_id.txt'
 NUM_STEPS = 10000  # Number of images in the validation set.
-RESTORE_FROM = './checkpoint/JPPNet-s2'
+RESTORE_FROM = './checkpoint/DeepLabV2'
 OUTPUT_DIR = 'D:/Datasets/LIP/output/parsing/val'
 
 if not os.path.exists(OUTPUT_DIR):
@@ -38,8 +39,8 @@ def main():
     h, w = INPUT_SIZE
     # Load reader.
     with tf.name_scope("create_inputs"):
-        reader = ImageReader(DATA_DIRECTORY, DATA_LIST_PATH,
-                             None, False, False, coord)
+        reader = ParsingReader(DATA_DIRECTORY, DATA_LIST_PATH, DATA_ID_LIST,
+                             None, False, False, False, coord, N_CLASSES)
         image = reader.image
         image_rev = tf.reverse(image, tf.stack([1]))
         image_list = reader.image_list
