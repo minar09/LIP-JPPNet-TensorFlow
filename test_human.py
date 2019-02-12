@@ -11,22 +11,20 @@ def main():
 
 
 def init_path():
-    # val_output_dir = 'E:/Dataset/LIP/output/JPPNet_parsing/val/'
-    # val_output_dir = 'E:/Dataset/LIP/output/parsing/val/'
-    val_output_dir = 'E:/Dataset/LIP/output/parsing/val_crf/'
-    val_id_list = 'E:/Dataset/LIP/list/val_id.txt'
-    val_label_dir = 'E:/Dataset/LIP/validation/labels/'
+    val_prediction_dir = 'D:/Datasets/LIP/output/parsing_lip/val/'
+    val_id_list = 'D:/Datasets/LIP/list/val_id.txt'
+    val_gt_dir = 'D:/Datasets/LIP/validation/labels/'
 
     val_gt_paths = []
-    val_pred_paths = []
+    val_prediction_paths = []
 
     f = open(val_id_list, 'r')
     for line in f:
         val = line.strip("\n")
-        val_gt_paths.append(val_label_dir + val + '.png')
-        val_pred_paths.append(val_output_dir + val + '.png')
+        val_gt_paths.append(val_gt_dir + val + '.png')
+        val_prediction_paths.append(val_prediction_dir + val + '.png')
 
-    return val_pred_paths, val_gt_paths
+    return val_prediction_paths, val_gt_paths
 
 
 def fast_hist(a, b, n):
@@ -96,7 +94,7 @@ def show_result(hist):
     print('=' * 50)
 
     # Save confusion matrix
-    np.savetxt('.output/JPPNet-s2_CRF_CM.csv', hist, fmt='%4i', delimiter=',')
+    np.savetxt('.output/JPPNet-s2_CM.csv', hist, fmt='%4i', delimiter=',')
 
 
 if __name__ == '__main__':

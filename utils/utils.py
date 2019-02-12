@@ -114,9 +114,11 @@ def load(saver, sess, ckpt_path):
     '''
     ckpt = tf.train.get_checkpoint_state(ckpt_path)
     if ckpt and ckpt.model_checkpoint_path:
-        ckpt_name = os.path.basename(ckpt.model_checkpoint_path)
-        saver.restore(sess, os.path.join(ckpt_path, ckpt_name))
-        print("Restored model parameters from {}".format(ckpt_name))
+        # ckpt_name = os.path.basename(ckpt.model_checkpoint_path)
+        # saver.restore(sess, os.path.join(ckpt_path, ckpt_name))
+        saver.restore(sess, ckpt.model_checkpoint_path)
+        # print("Restored model parameters from {}".format(ckpt_name))
+        print("Restored model parameters")
         return True
     else:
         return False

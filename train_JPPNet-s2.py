@@ -17,7 +17,7 @@ NUM_GPU = len(GPU_LIST)  # number of GPUs to use
 # parameters setting
 N_CLASSES = 20
 INPUT_SIZE = (384, 384)
-BATCH_SIZE = 3
+BATCH_SIZE = 4
 BATCH_ITERATION = BATCH_SIZE // NUM_GPU
 SHUFFLE = True
 RANDOM_SCALE = True
@@ -437,7 +437,7 @@ def main():
                 [loss_summary, reduced_loss, combined_train_op], feed_dict=feed_dict)
 
         summary_writer.add_summary(summary, step)    # Write to summary
-        if step % SAVE_PREDICTION_EVERY == 0:
+        if step % SAVE_PREDICTION_EVERY == 0 and step > 0:
             save(saver, sess, SNAPSHOT_DIR, step)    # Save model
 
         if step % SHOW_STEP == 0:
