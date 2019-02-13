@@ -1,15 +1,8 @@
 from __future__ import print_function
 from LIP_model import *
 from utils import *
-import matplotlib.pyplot as plt
-import numpy as np
 import tensorflow as tf
-import argparse
-from datetime import datetime
 import os
-import sys
-import time
-import scipy.misc
 import cv2
 from PIL import Image
 os.environ["CUDA_VISIBLE_DEVICES"] = "0"
@@ -20,11 +13,15 @@ os.environ['TF_CPP_MIN_LOG_LEVEL'] = '2'
 
 N_CLASSES = 20
 INPUT_SIZE = (384, 384)
-DATA_DIRECTORY = 'D:/Datasets/LIP/validation'
-DATA_LIST_PATH = 'D:/Datasets/LIP/list/val.txt'
-NUM_STEPS = 10000  # Number of images in the validation set.
+# DATA_DIRECTORY = 'D:/Datasets/LIP/validation'
+DATA_DIRECTORY = './datasets/examples'
+# DATA_LIST_PATH = 'D:/Datasets/LIP/list/val.txt'
+DATA_LIST_PATH = './datasets/examples/list/val.txt'
+# NUM_STEPS = 10000  # Number of images in the validation set.
+NUM_STEPS = 2  # Number of images in the validation set.
 RESTORE_FROM = './checkpoint/JPPNet-s2'
-OUTPUT_DIR = 'D:/Datasets/LIP/output/parsing_lip/val'
+# OUTPUT_DIR = 'D:/Datasets/LIP/output/parsing/val'
+OUTPUT_DIR = './datasets/examples/output/parsing/val'
 
 if not os.path.exists(OUTPUT_DIR):
     os.makedirs(OUTPUT_DIR)
