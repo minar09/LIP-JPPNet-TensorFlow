@@ -100,8 +100,8 @@ def save(saver, sess, logdir, step):
 
     if not os.path.exists(logdir):
         os.makedirs(logdir)
-    # saver.save(sess, checkpoint_path, global_step=step)
-    saver.save(sess, checkpoint_path)
+    saver.save(sess, checkpoint_path, global_step=step)
+    # saver.save(sess, checkpoint_path)
     print('The checkpoint has been created.')
 
 

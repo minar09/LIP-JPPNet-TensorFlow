@@ -99,6 +99,7 @@ def main():
                 parsing_out1_100 = net_100.layers['fc1_human']
                 parsing_out1_075 = net_075.layers['fc1_human']
                 parsing_out1_050 = net_050.layers['fc1_human']
+
                 # pose net
                 resnet_fea_100 = net_100.layers['res4b22_relu']
                 resnet_fea_075 = net_075.layers['res4b22_relu']
@@ -333,7 +334,7 @@ def main():
     # Saver for storing checkpoints of the model.
     all_saver_var = tf.global_variables()
     restore_var = all_saver_var  # [v for v in all_saver_var if 'pose' not in v.name and 'parsing' not in v.name]
-    saver = tf.train.Saver(var_list=all_saver_var, max_to_keep=50)
+    saver = tf.train.Saver(var_list=all_saver_var, max_to_keep=10)
     loader = tf.train.Saver(var_list=restore_var)
 
     if load(loader, sess, SNAPSHOT_DIR):
