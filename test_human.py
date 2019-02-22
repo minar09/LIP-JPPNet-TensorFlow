@@ -11,7 +11,9 @@ def main():
 
 
 def init_path():
-    val_prediction_dir = 'D:/Datasets/LIP/output/parsing_lip/val/'
+    # val_prediction_dir = 'D:/Datasets/LIP/output/parsing_lip/val/'
+    val_prediction_dir = 'D:/Datasets/LIP/output/JPPNet-s2/parsing/val/'
+    # val_prediction_dir = 'D:/Datasets/LIP/output/JPPNet-s2-pretrained/parsing/val'
     val_id_list = 'D:/Datasets/LIP/list/val_id.txt'
     val_gt_dir = 'D:/Datasets/LIP/validation/labels/'
 
@@ -37,19 +39,22 @@ def compute_hist(images, labels):
     hist = np.zeros((n_cl, n_cl))
 
     for img_path, label_path in tqdm(zip(images, labels)):
-        label = Image.open(label_path)
-        label_array = np.array(label, dtype=np.int32)
-        image = Image.open(img_path)
-        image_array = np.array(image, dtype=np.int32)
-
-        gtsz = label_array.shape
-        imgsz = image_array.shape
-
-        if not gtsz == imgsz:
-            image = image.resize((gtsz[1], gtsz[0]), Image.ANTIALIAS)
+        try:
+            label = Image.open(label_path)
+            label_array = np.array(label, dtype=np.int32)
+            image = Image.open(img_path)
             image_array = np.array(image, dtype=np.int32)
 
-        hist += fast_hist(label_array, image_array, n_cl)
+            gtsz = label_array.shape
+            imgsz = image_array.shape
+
+            if not gtsz == imgsz:
+                image = image.resize((gtsz[1], gtsz[0]), Image.ANTIALIAS)
+                image_array = np.array(image, dtype=np.int32)
+
+            hist += fast_hist(label_array, image_array, n_cl)
+        except Exception as err:
+            print(err)
 
     return hist
 
@@ -94,7 +99,7 @@ def show_result(hist):
     print('=' * 50)
 
     # Save confusion matrix
-    np.savetxt('.output/JPPNet-s2_CM.csv', hist, fmt='%4i', delimiter=',')
+    np.savetxt('./output/JPPNet-s2_CM.csv', hist, fmt='%4i', delimiter=',')
 
 
 if __name__ == '__main__':

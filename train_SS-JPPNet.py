@@ -33,14 +33,12 @@ NUM_STEPS = SAVE_PREDICTION_EVERY * NUM_EPOCHS
 SHOW_STEP = 10
 p_Weight = 1
 s_Weight = 1
-DATA_DIR = 'D:/Datasets/LIP/training'
-# DATA_DIR = './datasets/examples'
-LIST_PATH = 'D:/Datasets/LIP/list/train_rev.txt'
-# LIST_PATH = './datasets/examples/list/train.txt'
-DATA_ID_LIST = 'D:/Datasets/LIP/list/train_id.txt'
-# DATA_ID_LIST = './datasets/examples/list/train_id.txt'
-SNAPSHOT_DIR = './checkpoint/JPPNet-s2'
-LOG_DIR = './logs/JPPNet-s2'
+# IMAGE_DIR = 'D:/Datasets/LIP/training/images'
+IMAGE_DIR = './datasets/examples/images/'
+# LABEL_DIR = 'D:/Datasets/LIP/training/labels'
+LABEL_DIR = './datasets/examples/labels/'
+SNAPSHOT_DIR = './checkpoint/SS-JPPNet'
+LOG_DIR = './logs/SS-JPPNet'
 
 
 def main():
@@ -53,11 +51,11 @@ def main():
 
     # Load reader.
     with tf.name_scope("create_inputs"):
-        reader = LIPReader(DATA_DIR, LIST_PATH, DATA_ID_LIST, INPUT_SIZE, RANDOM_SCALE, RANDOM_MIRROR, SHUFFLE, coord)
-        image_batch, label_batch, heatmap_batch = reader.dequeue(BATCH_SIZE)
+        reader = SSLReader(IMAGE_DIR, LABEL_DIR, INPUT_SIZE, RANDOM_SCALE, RANDOM_MIRROR, SHUFFLE, coord)
+        image_batch, label_batch = reader.dequeue(BATCH_SIZE)
         image_batch075 = tf.image.resize_images(image_batch, [int(h * 0.75), int(w * 0.75)])
         image_batch050 = tf.image.resize_images(image_batch, [int(h * 0.5), int(w * 0.5)])
-        heatmap_batch = tf.scalar_mul(1.0 / 255, heatmap_batch)
+        # TODO: Generate GT joints from labels
 
     tower_grads = []
 
@@ -65,13 +63,13 @@ def main():
     base_lr = tf.constant(LEARNING_RATE)
     step_ph = tf.placeholder(dtype=tf.float32, shape=())
     learning_rate = tf.scalar_mul(base_lr, tf.pow((1 - step_ph / NUM_STEPS), POWER))
-    optim = tf.train.MomentumOptimizer(learning_rate, MOMENTUM)
+    optimizer = tf.train.MomentumOptimizer(learning_rate, MOMENTUM)
 
     reduced_loss = None
 
     for i in range(NUM_GPU):
         with tf.device('/gpu:%d' % i):
-            with tf.name_scope('Tower_%d' % (i)) as scope:
+            with tf.name_scope('Tower_%d' % i) as scope:
                 if i == 0:
                     reuse1 = False
                     reuse2 = True
@@ -81,7 +79,6 @@ def main():
                 next_image = image_batch[i * BATCH_ITERATION:(i + 1) * BATCH_ITERATION, :]
                 next_image075 = image_batch075[i * BATCH_ITERATION:(i + 1) * BATCH_ITERATION, :]
                 next_image050 = image_batch050[i * BATCH_ITERATION:(i + 1) * BATCH_ITERATION, :]
-                next_heatmap = heatmap_batch[i * BATCH_ITERATION:(i + 1) * BATCH_ITERATION, :]
                 next_label = label_batch[i * BATCH_ITERATION:(i + 1) * BATCH_ITERATION, :]
 
                 # Create network.
@@ -288,7 +285,7 @@ def main():
                 reduced_loss = loss_pose * s_Weight + loss_parsing * p_Weight
 
                 trainable_variable = tf.trainable_variables()
-                grads = optim.compute_gradients(reduced_loss, var_list=trainable_variable)
+                grads = optimizer.compute_gradients(reduced_loss, var_list=trainable_variable)
 
                 tower_grads.append(grads)
 
@@ -303,7 +300,7 @@ def main():
     # Average the gradients
     grads_ave = average_gradients(tower_grads)
     # apply the gradients with our optimizers
-    train_op = optim.apply_gradients(grads_ave)
+    train_op = optimizer.apply_gradients(grads_ave)
 
     loss_p1_ave = tf.reduce_mean(tf.get_collection('loss_p1'))
     loss_p2_ave = tf.reduce_mean(tf.get_collection('loss_p2'))

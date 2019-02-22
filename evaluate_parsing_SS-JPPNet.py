@@ -13,15 +13,13 @@ os.environ['TF_CPP_MIN_LOG_LEVEL'] = '2'
 
 N_CLASSES = 20
 INPUT_SIZE = (384, 384)
-DATA_DIRECTORY = 'D:/Datasets/LIP/validation'
+IMAGE_DIR = 'D:/Datasets/LIP/validation/images'
 # DATA_DIRECTORY = './datasets/examples'
 DATA_LIST_PATH = 'D:/Datasets/LIP/list/val.txt'
 # DATA_LIST_PATH = './datasets/examples/list/val.txt'
 NUM_STEPS = 10000  # Number of images in the validation set.
-RESTORE_FROM = './checkpoint/JPPNet-s2'
-# RESTORE_FROM = './checkpoint/JPPNet-s2-pretrained'
-# OUTPUT_DIR = 'D:/Datasets/LIP/output/JPPNet-s2/parsing/val'
-OUTPUT_DIR = 'D:/Datasets/LIP/output/JPPNet-s2-pretrained/parsing/val'
+RESTORE_FROM = './checkpoint/SS-JPPNet'
+OUTPUT_DIR = 'D:/Datasets/LIP/output/SS-JPPNet/parsing/val'
 # OUTPUT_DIR = './datasets/examples/output/parsing/val'
 
 if not os.path.exists(OUTPUT_DIR):
@@ -36,8 +34,7 @@ def main():
     h, w = INPUT_SIZE
     # Load reader.
     with tf.name_scope("create_inputs"):
-        reader = ImageReader(DATA_DIRECTORY, DATA_LIST_PATH,
-                             None, False, False, coord)
+        reader = SSLReader(IMAGE_DIR, None, None, False, False, False, coord)
         image = reader.image
         image_rev = tf.reverse(image, tf.stack([1]))
         image_list = reader.image_list
@@ -160,21 +157,18 @@ def main():
 
     # Iterate over training steps.
     for step in range(NUM_STEPS):
-        try:
-            parsing_ = sess.run(pred_all)
-            if step % 100 == 0:
-                print('step {:d}'.format(step))
-                print(image_list[step])
-            img_split = image_list[step].split('/')
-            img_id = img_split[-1][:-4]
+        parsing_ = sess.run(pred_all)
+        if step % 100 == 0:
+            print('step {:d}'.format(step))
+            print(image_list[step])
+        img_split = image_list[step].split('/')
+        img_id = img_split[-1][:-4]
 
-            msk = decode_labels(parsing_, num_classes=N_CLASSES)
-            parsing_im = Image.fromarray(msk[0])
-            parsing_im.save('{}/{}_vis.png'.format(OUTPUT_DIR, img_id))
-            cv2.imwrite('{}/{}.png'.format(OUTPUT_DIR, img_id),
-                        parsing_[0, :, :, 0])
-        except Exception as err:
-            print(err)
+        msk = decode_labels(parsing_, num_classes=N_CLASSES)
+        parsing_im = Image.fromarray(msk[0])
+        parsing_im.save('{}/{}_vis.png'.format(OUTPUT_DIR, img_id))
+        cv2.imwrite('{}/{}.png'.format(OUTPUT_DIR, img_id),
+                    parsing_[0, :, :, 0])
 
     coord.request_stop()
     coord.join(threads)
