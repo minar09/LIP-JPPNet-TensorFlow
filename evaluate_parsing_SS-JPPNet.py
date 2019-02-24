@@ -20,7 +20,6 @@ DATA_LIST_PATH = 'D:/Datasets/LIP/list/val.txt'
 NUM_STEPS = 10000  # Number of images in the validation set.
 RESTORE_FROM = './checkpoint/SS-JPPNet'
 OUTPUT_DIR = 'D:/Datasets/LIP/output/SS-JPPNet/parsing/val'
-# OUTPUT_DIR = './datasets/examples/output/parsing/val'
 
 if not os.path.exists(OUTPUT_DIR):
     os.makedirs(OUTPUT_DIR)

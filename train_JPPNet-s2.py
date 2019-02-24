@@ -27,7 +27,7 @@ SAVE_PREDICTION_EVERY = NUM_IMAGES // BATCH_SIZE
 # SAVE_PREDICTION_EVERY = 100
 # SAVE_PRED_EVERY = 7616
 # NUM_STEPS = 7616 * 35 + 1
-NUM_EPOCHS = 60
+NUM_EPOCHS = 30
 NUM_STEPS = SAVE_PREDICTION_EVERY * NUM_EPOCHS
 # NUM_STEPS = NUM_EPOCHS * 100
 SHOW_STEP = 10
@@ -53,10 +53,13 @@ def main():
 
     # Load reader.
     with tf.name_scope("create_inputs"):
-        reader = LIPReader(DATA_DIR, LIST_PATH, DATA_ID_LIST, INPUT_SIZE, RANDOM_SCALE, RANDOM_MIRROR, SHUFFLE, coord)
+        reader = LIPReader(DATA_DIR, LIST_PATH, DATA_ID_LIST,
+                           INPUT_SIZE, RANDOM_SCALE, RANDOM_MIRROR, SHUFFLE, coord)
         image_batch, label_batch, heatmap_batch = reader.dequeue(BATCH_SIZE)
-        image_batch075 = tf.image.resize_images(image_batch, [int(h * 0.75), int(w * 0.75)])
-        image_batch050 = tf.image.resize_images(image_batch, [int(h * 0.5), int(w * 0.5)])
+        image_batch075 = tf.image.resize_images(
+            image_batch, [int(h * 0.75), int(w * 0.75)])
+        image_batch050 = tf.image.resize_images(
+            image_batch, [int(h * 0.5), int(w * 0.5)])
         heatmap_batch = tf.scalar_mul(1.0 / 255, heatmap_batch)
 
     tower_grads = []
@@ -64,7 +67,8 @@ def main():
     # Define loss and optimisation parameters.
     base_lr = tf.constant(LEARNING_RATE)
     step_ph = tf.placeholder(dtype=tf.float32, shape=())
-    learning_rate = tf.scalar_mul(base_lr, tf.pow((1 - step_ph / NUM_STEPS), POWER))
+    learning_rate = tf.scalar_mul(
+        base_lr, tf.pow((1 - step_ph / NUM_STEPS), POWER))
     optim = tf.train.MomentumOptimizer(learning_rate, MOMENTUM)
 
     reduced_loss = None
@@ -78,19 +82,27 @@ def main():
                 else:
                     reuse1 = True
                     reuse2 = True
-                next_image = image_batch[i * BATCH_ITERATION:(i + 1) * BATCH_ITERATION, :]
-                next_image075 = image_batch075[i * BATCH_ITERATION:(i + 1) * BATCH_ITERATION, :]
-                next_image050 = image_batch050[i * BATCH_ITERATION:(i + 1) * BATCH_ITERATION, :]
-                next_heatmap = heatmap_batch[i * BATCH_ITERATION:(i + 1) * BATCH_ITERATION, :]
-                next_label = label_batch[i * BATCH_ITERATION:(i + 1) * BATCH_ITERATION, :]
+                next_image = image_batch[i *
+                                         BATCH_ITERATION:(i + 1) * BATCH_ITERATION, :]
+                next_image075 = image_batch075[i *
+                                               BATCH_ITERATION:(i + 1) * BATCH_ITERATION, :]
+                next_image050 = image_batch050[i *
+                                               BATCH_ITERATION:(i + 1) * BATCH_ITERATION, :]
+                next_heatmap = heatmap_batch[i *
+                                             BATCH_ITERATION:(i + 1) * BATCH_ITERATION, :]
+                next_label = label_batch[i *
+                                         BATCH_ITERATION:(i + 1) * BATCH_ITERATION, :]
 
                 # Create network.
                 with tf.variable_scope('', reuse=reuse1):
-                    net_100 = JPPNetModel({'data': next_image}, is_training=False, n_classes=N_CLASSES)
+                    net_100 = JPPNetModel(
+                        {'data': next_image}, is_training=False, n_classes=N_CLASSES)
                 with tf.variable_scope('', reuse=reuse2):
-                    net_075 = JPPNetModel({'data': next_image075}, is_training=False, n_classes=N_CLASSES)
+                    net_075 = JPPNetModel(
+                        {'data': next_image075}, is_training=False, n_classes=N_CLASSES)
                 with tf.variable_scope('', reuse=reuse2):
-                    net_050 = JPPNetModel({'data': next_image050}, is_training=False, n_classes=N_CLASSES)
+                    net_050 = JPPNetModel(
+                        {'data': next_image050}, is_training=False, n_classes=N_CLASSES)
 
                 # parsing net
                 parsing_fea1_100 = net_100.layers['res5d_branch2b_parsing']
@@ -107,7 +119,8 @@ def main():
                 resnet_fea_050 = net_050.layers['res4b22_relu']
 
                 with tf.variable_scope('', reuse=reuse1):
-                    pose_out1_100, pose_fea1_100 = pose_net(resnet_fea_100, 'fc1_pose')
+                    pose_out1_100, pose_fea1_100 = pose_net(
+                        resnet_fea_100, 'fc1_pose')
                     pose_out2_100, pose_fea2_100 = pose_refine(pose_out1_100, parsing_out1_100, pose_fea1_100,
                                                                name='fc2_pose')
                     parsing_out2_100, parsing_fea2_100 = parsing_refine(parsing_out1_100, pose_out1_100,
@@ -118,7 +131,8 @@ def main():
                                                                name='fc3_pose')
 
                 with tf.variable_scope('', reuse=reuse2):
-                    pose_out1_075, pose_fea1_075 = pose_net(resnet_fea_075, 'fc1_pose')
+                    pose_out1_075, pose_fea1_075 = pose_net(
+                        resnet_fea_075, 'fc1_pose')
                     pose_out2_075, pose_fea2_075 = pose_refine(pose_out1_075, parsing_out1_075, pose_fea1_075,
                                                                name='fc2_pose')
                     parsing_out2_075, parsing_fea2_075 = parsing_refine(parsing_out1_075, pose_out1_075,
@@ -129,7 +143,8 @@ def main():
                                                                name='fc3_pose')
 
                 with tf.variable_scope('', reuse=reuse2):
-                    pose_out1_050, pose_fea1_050 = pose_net(resnet_fea_050, 'fc1_pose')
+                    pose_out1_050, pose_fea1_050 = pose_net(
+                        resnet_fea_050, 'fc1_pose')
                     pose_out2_050, pose_fea2_050 = pose_refine(pose_out1_050, parsing_out1_050, pose_fea1_050,
                                                                name='fc2_pose')
                     parsing_out2_050, parsing_fea2_050 = parsing_refine(parsing_out1_050, pose_out1_050,
@@ -179,32 +194,46 @@ def main():
 
                 # Predictions: ignoring all predictions with labels greater or equal than n_classes
                 raw_prediction_p1 = tf.reshape(parsing_out1, [-1, N_CLASSES])
-                raw_prediction_p1_100 = tf.reshape(parsing_out1_100, [-1, N_CLASSES])
-                raw_prediction_p1_075 = tf.reshape(parsing_out1_075, [-1, N_CLASSES])
-                raw_prediction_p1_050 = tf.reshape(parsing_out1_050, [-1, N_CLASSES])
+                raw_prediction_p1_100 = tf.reshape(
+                    parsing_out1_100, [-1, N_CLASSES])
+                raw_prediction_p1_075 = tf.reshape(
+                    parsing_out1_075, [-1, N_CLASSES])
+                raw_prediction_p1_050 = tf.reshape(
+                    parsing_out1_050, [-1, N_CLASSES])
 
                 raw_prediction_p2 = tf.reshape(parsing_out2, [-1, N_CLASSES])
-                raw_prediction_p2_100 = tf.reshape(parsing_out2_100, [-1, N_CLASSES])
-                raw_prediction_p2_075 = tf.reshape(parsing_out2_075, [-1, N_CLASSES])
-                raw_prediction_p2_050 = tf.reshape(parsing_out2_050, [-1, N_CLASSES])
+                raw_prediction_p2_100 = tf.reshape(
+                    parsing_out2_100, [-1, N_CLASSES])
+                raw_prediction_p2_075 = tf.reshape(
+                    parsing_out2_075, [-1, N_CLASSES])
+                raw_prediction_p2_050 = tf.reshape(
+                    parsing_out2_050, [-1, N_CLASSES])
 
                 raw_prediction_p3 = tf.reshape(parsing_out3, [-1, N_CLASSES])
-                raw_prediction_p3_100 = tf.reshape(parsing_out3_100, [-1, N_CLASSES])
-                raw_prediction_p3_075 = tf.reshape(parsing_out3_075, [-1, N_CLASSES])
-                raw_prediction_p3_050 = tf.reshape(parsing_out3_050, [-1, N_CLASSES])
+                raw_prediction_p3_100 = tf.reshape(
+                    parsing_out3_100, [-1, N_CLASSES])
+                raw_prediction_p3_075 = tf.reshape(
+                    parsing_out3_075, [-1, N_CLASSES])
+                raw_prediction_p3_050 = tf.reshape(
+                    parsing_out3_050, [-1, N_CLASSES])
 
                 label_proc = prepare_label(next_label, tf.stack(parsing_out1.get_shape()[1:3]),
-                                           one_hot=False)  # [batch_size, h, w]
-                label_proc075 = prepare_label(next_label, tf.stack(parsing_out1_075.get_shape()[1:3]), one_hot=False)
-                label_proc050 = prepare_label(next_label, tf.stack(parsing_out1_050.get_shape()[1:3]), one_hot=False)
+                                           one_hot=False, num_classes=N_CLASSES)  # [batch_size, h, w]
+                label_proc075 = prepare_label(next_label, tf.stack(
+                    parsing_out1_075.get_shape()[1:3]), one_hot=False, num_classes=N_CLASSES)
+                label_proc050 = prepare_label(next_label, tf.stack(
+                    parsing_out1_050.get_shape()[1:3]), one_hot=False, num_classes=N_CLASSES)
 
                 raw_gt = tf.reshape(label_proc, [-1, ])
                 raw_gt075 = tf.reshape(label_proc075, [-1, ])
                 raw_gt050 = tf.reshape(label_proc050, [-1, ])
 
-                indices = tf.squeeze(tf.where(tf.less_equal(raw_gt, N_CLASSES - 1)), 1)
-                indices075 = tf.squeeze(tf.where(tf.less_equal(raw_gt075, N_CLASSES - 1)), 1)
-                indices050 = tf.squeeze(tf.where(tf.less_equal(raw_gt050, N_CLASSES - 1)), 1)
+                indices = tf.squeeze(
+                    tf.where(tf.less_equal(raw_gt, N_CLASSES - 1)), 1)
+                indices075 = tf.squeeze(
+                    tf.where(tf.less_equal(raw_gt075, N_CLASSES - 1)), 1)
+                indices050 = tf.squeeze(
+                    tf.where(tf.less_equal(raw_gt050, N_CLASSES - 1)), 1)
 
                 gt = tf.cast(tf.gather(raw_gt, indices), tf.int32)
                 gt075 = tf.cast(tf.gather(raw_gt075, indices075), tf.int32)
@@ -212,21 +241,29 @@ def main():
 
                 prediction_p1 = tf.gather(raw_prediction_p1, indices)
                 prediction_p1_100 = tf.gather(raw_prediction_p1_100, indices)
-                prediction_p1_075 = tf.gather(raw_prediction_p1_075, indices075)
-                prediction_p1_050 = tf.gather(raw_prediction_p1_050, indices050)
+                prediction_p1_075 = tf.gather(
+                    raw_prediction_p1_075, indices075)
+                prediction_p1_050 = tf.gather(
+                    raw_prediction_p1_050, indices050)
 
                 prediction_p2 = tf.gather(raw_prediction_p2, indices)
                 prediction_p2_100 = tf.gather(raw_prediction_p2_100, indices)
-                prediction_p2_075 = tf.gather(raw_prediction_p2_075, indices075)
-                prediction_p2_050 = tf.gather(raw_prediction_p2_050, indices050)
+                prediction_p2_075 = tf.gather(
+                    raw_prediction_p2_075, indices075)
+                prediction_p2_050 = tf.gather(
+                    raw_prediction_p2_050, indices050)
 
                 prediction_p3 = tf.gather(raw_prediction_p3, indices)
                 prediction_p3_100 = tf.gather(raw_prediction_p3_100, indices)
-                prediction_p3_075 = tf.gather(raw_prediction_p3_075, indices075)
-                prediction_p3_050 = tf.gather(raw_prediction_p3_050, indices050)
+                prediction_p3_075 = tf.gather(
+                    raw_prediction_p3_075, indices075)
+                prediction_p3_050 = tf.gather(
+                    raw_prediction_p3_050, indices050)
 
-                next_heatmap075 = tf.image.resize_nearest_neighbor(next_heatmap, pose_out1_075.get_shape()[1:3])
-                next_heatmap050 = tf.image.resize_nearest_neighbor(next_heatmap, pose_out1_050.get_shape()[1:3])
+                next_heatmap075 = tf.image.resize_nearest_neighbor(
+                    next_heatmap, pose_out1_075.get_shape()[1:3])
+                next_heatmap050 = tf.image.resize_nearest_neighbor(
+                    next_heatmap, pose_out1_050.get_shape()[1:3])
 
                 # Pixel-wise softmax loss.
                 loss_p1 = tf.reduce_mean(
@@ -283,12 +320,15 @@ def main():
                 loss_s3_050 = tf.reduce_mean(
                     tf.sqrt(tf.reduce_sum(tf.square(tf.subtract(next_heatmap050, pose_out3_050)), [1, 2, 3])))
 
-                loss_parsing = loss_p1 + loss_p1_100 + loss_p1_075 + loss_p1_050 + loss_p2 + loss_p2_100 + loss_p2_075 + loss_p2_050 + loss_p3 + loss_p3_100 + loss_p3_075 + loss_p3_050
-                loss_pose = loss_s1 + loss_s1_100 + loss_s1_075 + loss_s1_050 + loss_s2 + loss_s2_100 + loss_s2_075 + loss_s2_050 + loss_s3 + loss_s3_100 + loss_s3_075 + loss_s3_050
+                loss_parsing = loss_p1 + loss_p1_100 + loss_p1_075 + loss_p1_050 + loss_p2 + loss_p2_100 + \
+                    loss_p2_075 + loss_p2_050 + loss_p3 + loss_p3_100 + loss_p3_075 + loss_p3_050
+                loss_pose = loss_s1 + loss_s1_100 + loss_s1_075 + loss_s1_050 + loss_s2 + loss_s2_100 + \
+                    loss_s2_075 + loss_s2_050 + loss_s3 + loss_s3_100 + loss_s3_075 + loss_s3_050
                 reduced_loss = loss_pose * s_Weight + loss_parsing * p_Weight
 
                 trainable_variable = tf.trainable_variables()
-                grads = optim.compute_gradients(reduced_loss, var_list=trainable_variable)
+                grads = optim.compute_gradients(
+                    reduced_loss, var_list=trainable_variable)
 
                 tower_grads.append(grads)
 
@@ -323,10 +363,12 @@ def main():
     loss_summary = tf.summary.merge(
         [loss_summary_ave, loss_summary_s1, loss_summary_s2, loss_summary_s3, loss_summary_p1, loss_summary_p2,
          loss_summary_p3])
-    summary_writer = tf.summary.FileWriter(LOG_DIR, graph=tf.get_default_graph())
+    summary_writer = tf.summary.FileWriter(
+        LOG_DIR, graph=tf.get_default_graph())
 
     # Set up tf session and initialize variables.
-    config = tf.ConfigProto(allow_soft_placement=True, log_device_placement=False)
+    config = tf.ConfigProto(allow_soft_placement=True,
+                            log_device_placement=False)
     config.gpu_options.allow_growth = True
     sess = tf.Session(config=config)
     init = tf.global_variables_initializer()
@@ -334,7 +376,8 @@ def main():
 
     # Saver for storing checkpoints of the model.
     all_saver_var = tf.global_variables()
-    restore_var = all_saver_var  # [v for v in all_saver_var if 'pose' not in v.name and 'parsing' not in v.name]
+    # [v for v in all_saver_var if 'pose' not in v.name and 'parsing' not in v.name]
+    restore_var = all_saver_var
     saver = tf.train.Saver(var_list=all_saver_var, max_to_keep=1)
     loader = tf.train.Saver(var_list=restore_var)
 
@@ -352,7 +395,8 @@ def main():
         feed_dict = {step_ph: step}
 
         # Apply gradients.
-        summary, loss_value, _ = sess.run([loss_summary, reduced_loss, train_op], feed_dict=feed_dict)
+        summary, loss_value, _ = sess.run(
+            [loss_summary, reduced_loss, train_op], feed_dict=feed_dict)
         summary_writer.add_summary(summary, step)
 
         if step % SAVE_PREDICTION_EVERY == 0 and step > 0:
@@ -360,7 +404,8 @@ def main():
 
         if step % SHOW_STEP == 0:
             duration = time.time() - start_time
-            print('step {:d} \t loss = {:.3f}, ({:.3f} sec/step)'.format(step, loss_value, duration))
+            print(
+                'step {:d} \t loss = {:.3f}, ({:.3f} sec/step)'.format(step, loss_value, duration))
 
     coord.request_stop()
     coord.join(threads)

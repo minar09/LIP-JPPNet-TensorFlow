@@ -11,7 +11,6 @@ def main():
 
 
 def init_path():
-    # val_prediction_dir = 'D:/Datasets/LIP/output/parsing_lip/val/'
     val_prediction_dir = 'D:/Datasets/LIP/output/JPPNet-s2/parsing/val/'
     # val_prediction_dir = 'D:/Datasets/LIP/output/JPPNet-s2-pretrained/parsing/val'
     val_id_list = 'D:/Datasets/LIP/list/val_id.txt'

@@ -2,18 +2,51 @@ from PIL import Image
 import numpy as np
 import tensorflow as tf
 import os
-import scipy.misc
-from scipy.stats import multivariate_normal
-import matplotlib.pyplot as plt
 
-n_classes = 20
-# colour map
-label_colours = [(0, 0, 0)                 # 0=Background
-                 # 1=Hat,  2=Hair,    3=Glove, 4=Sunglasses, 5=UpperClothes
-                 # 6=Dress, 7=Coat, 8=Socks, 9=Pants, 10=Jumpsuits
-                 # 11=Scarf, 12=Skirt, 13=Face, 14=LeftArm, 15=RightArm
-                 , (128, 0, 0), (255, 0, 0), (0, 85, 0), (170, 0, 51), (255, 85, 0), (0, 0, 85), (0, 119, 221), (85, 85, 0), (0, 85, 85), (85, 51, 0), (52, 86, 128), (0, 128, 0), (0, 0, 255), (51, 170, 221), (0, 255, 255), (85, 255, 170), (170, 255, 85), (255, 255, 0), (255, 170, 0)]
-# 16=LeftLeg, 17=RightLeg, 18=LeftShoe, 19=RightShoe
+# colour map for LIP dataset
+lip_label_colours = [(0, 0, 0),  # 0=Background
+                     (128, 0, 0),  # 1=Hat
+                     (255, 0, 0),  # 2=Hair
+                     (0, 85, 0),   # 3=Glove
+                     (170, 0, 51),  # 4=Sunglasses
+                     (255, 85, 0),  # 5=UpperClothes
+                     (0, 0, 85),  # 6=Dress
+                     (0, 119, 221),  # 7=Coat
+                     (85, 85, 0),  # 8=Socks
+                     (0, 85, 85),  # 9=Pants
+                     (85, 51, 0),  # 10=Jumpsuits
+                     (52, 86, 128),  # 11=Scarf
+                     (0, 128, 0),  # 12=Skirt
+                     (0, 0, 255),  # 13=Face
+                     (51, 170, 221),  # 14=LeftArm
+                     (0, 255, 255),  # 15=RightArm
+                     (85, 255, 170),  # 16=LeftLeg
+                     (170, 255, 85),  # 17=RightLeg
+                     (255, 255, 0),  # 18=LeftShoe
+                     (255, 170, 0)  # 19=RightShoe
+                     ]
+
+# colour map for 10k dataset
+fashion_label_colours = [(0, 0, 0),  # 0=Background
+                         (128, 0, 0),  # hat
+                         (255, 0, 0),  # hair
+                         (170, 0, 51),  # sunglasses
+                         (255, 85, 0),  # upper-clothes
+                         (0, 128, 0),  # skirt
+                         (0, 85, 85),  # pants
+                         (0, 0, 85),  # dress
+                         (0, 85, 0),  # belt
+                         (255, 255, 0),  # Left-shoe
+                         (255, 170, 0),  # Right-shoe
+                         (0, 0, 255),  # face
+                         (85, 255, 170),  # left-leg
+                         (170, 255, 85),  # right-leg
+                         (51, 170, 221),  # left-arm
+                         (0, 255, 255),  # right-arm
+                         (85, 51, 0),  # bag
+                         (52, 86, 128)  # scarf
+                         ]
+
 # image mean
 IMG_MEAN = np.array((104.00698793, 116.66876762,
                      122.67891434), dtype=np.float32)
@@ -29,6 +62,12 @@ def decode_labels(mask, num_images=1, num_classes=20):
     Returns:
       A batch with num_images RGB images of the same size as the input. 
     """
+    label_colours = []
+    if num_classes == 20:
+        label_colours = lip_label_colours
+    elif num_classes == 18:
+        label_colours = fashion_label_colours
+
     n, h, w, c = mask.shape
     assert(n >= num_images), 'Batch size %d should be greater or equal than number of images to save %d.' % (
         n, num_images)
@@ -38,13 +77,13 @@ def decode_labels(mask, num_images=1, num_classes=20):
         pixels = img.load()
         for j_, j in enumerate(mask[i, :, :, 0]):
             for k_, k in enumerate(j):
-                if k < n_classes:
+                if k < num_classes:
                     pixels[k_, j_] = label_colours[k]
         outputs[i] = np.array(img)
     return outputs
 
 
-def prepare_label(input_batch, new_size, one_hot=True):
+def prepare_label(input_batch, new_size, one_hot=True, num_classes=20):
     """Resize masks and perform one-hot encoding.
 
     Args:
@@ -61,7 +100,7 @@ def prepare_label(input_batch, new_size, one_hot=True):
         # reducing the channel dimension.
         input_batch = tf.squeeze(input_batch, squeeze_dims=[3])
         if one_hot:
-            input_batch = tf.one_hot(input_batch, depth=n_classes)
+            input_batch = tf.one_hot(input_batch, depth=num_classes)
     return input_batch
 
 
