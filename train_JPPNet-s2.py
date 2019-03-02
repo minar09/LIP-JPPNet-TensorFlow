@@ -6,14 +6,14 @@ from utils import *
 from LIP_model import *
 
 # Set gpus
-gpus = [0]  # Here I set CUDA to only see one GPU
+gpus = [0, 1, 2, 3]  # Here I set CUDA to only see one GPU
 os.environ["CUDA_VISIBLE_DEVICES"] = ','.join([str(i) for i in gpus])
 NUM_GPU = len(gpus)  # number of GPUs to use
 
 # parameters setting
 N_CLASSES = 20
 INPUT_SIZE = (384, 384)
-BATCH_SIZE = 2
+BATCH_SIZE = 8
 BATCH_ITERATION = BATCH_SIZE // NUM_GPU
 SHUFFLE = True
 RANDOM_SCALE = True
@@ -75,7 +75,7 @@ def main():
 
     for i in range(NUM_GPU):
         with tf.device('/gpu:%d' % i):
-            with tf.name_scope('Tower_%d' % (i)) as scope:
+            with tf.name_scope('Tower_%d' % i) as scope:
                 if i == 0:
                     reuse1 = False
                     reuse2 = True

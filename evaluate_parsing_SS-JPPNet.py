@@ -5,7 +5,8 @@ import tensorflow as tf
 import os
 import cv2
 from PIL import Image
-os.environ["CUDA_VISIBLE_DEVICES"] = "0"
+
+# os.environ["CUDA_VISIBLE_DEVICES"] = "0"
 
 
 # Hide the warning messages about CPU/GPU
@@ -130,7 +131,7 @@ def main():
         tf.stack([head_output, tail_output_rev]), axis=0)
     raw_output_all = tf.expand_dims(raw_output_all, dim=0)
     raw_output_all = tf.argmax(raw_output_all, dimension=3)
-    pred_all = tf.expand_dims(raw_output_all, dim=3)  # Create 4-d tensor.
+    prediction_all = tf.expand_dims(raw_output_all, dim=3)  # Create 4-d tensor.
 
     # Which variables to load.
     restore_var = tf.global_variables()
@@ -156,7 +157,7 @@ def main():
 
     # Iterate over training steps.
     for step in range(NUM_STEPS):
-        parsing_ = sess.run(pred_all)
+        parsing_ = sess.run(prediction_all)
         if step % 100 == 0:
             print('step {:d}'.format(step))
             print(image_list[step])
