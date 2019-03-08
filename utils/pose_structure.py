@@ -4,25 +4,19 @@ import numpy as np
 
 class PoseCreateLayer(object):
 
-    def __init__(self, top, bottom, error_order, num_class=18, num_joint=9):
+    def __init__(self, bottom_input, num_class=18, num_joint=9):
         self.num_joint_ = num_joint
-        self.top = top
-        self.bottom = bottom
-        self.error_order_ = error_order
+        self.input = bottom_input
         self.num_class_ = num_class
-
-        if bottom[0].width() != self.num_joint_ * 2:
-            print("The bottom width and num of joint should have the same number.")
-        top[0].Reshape(bottom[1].num(), self.num_joint_,
-                       self.bottom[1].height(), self.bottom[1].width())
+        self.output = None
 
     def pose_create(self):
-        bottom_data_points = self.bottom[0]
-        top_data_points = self.top[0]
+        bottom_data_points = self.input[0]
+        top_data_points = self.output[0]
 
-        bottom_num = self.bottom[1].num()
-        bottom_height = self.bottom[1].height()
-        bottom_width = self.bottom[1].width()
+        bottom_num = self.input[1].num()
+        bottom_height = self.input[1].height()
+        bottom_width = self.input[1].width()
         sigma = 1.0  # 1.0
 
         for idx in range(bottom_num):
@@ -43,8 +37,8 @@ class PoseCreateLayer(object):
                             gaussian = 4 * gaussian  # /4
                             top_data_points[index] = gaussian
 
-            bottom_data_points += self.bottom[0].offset(1)
-            top_data_points += self.top[0].offset(1)
+            bottom_data_points += self.input[0].offset(1)
+            top_data_points += self.output[0].offset(1)
 
 
 class PoseEvaluateLayer(object):
