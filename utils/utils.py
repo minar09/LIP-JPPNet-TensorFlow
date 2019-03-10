@@ -58,7 +58,7 @@ def decode_labels(mask, num_images=1, num_classes=20):
     Args:
       mask: result of inference after taking argmax.
       num_images: number of images to decode from the batch.
-
+      num_classes: num of classes
     Returns:
       A batch with num_images RGB images of the same size as the input. 
     """
