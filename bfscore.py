@@ -4,6 +4,7 @@
 # Reference: Csurka, G., D. Larlus, and F. Perronnin. "What is a good evaluation measure for semantic segmentation?" Proceedings of the British Machine Vision Conference, 2013, pp. 32.1-32.11. #
 # Crosscheck: https://www.mathworks.com/help/images/ref/bfscore.html #
 
+import os
 import cv2
 import numpy as np
 from tqdm import tqdm
@@ -13,21 +14,25 @@ bDebug = False
 
 
 def init_path():
-    val_output_dir = 'D:/Datasets/LIP/output/JPPNet-s2/parsing/val/'
-    # val_output_dir = 'D:/Datasets/LIP/output/JPPNet-s2-pretrained/parsing/val'
-    val_id_list = 'D:/Datasets/LIP/list/val_id.txt'
-    val_label_dir = 'D:/Datasets/LIP/validation/labels/'
+    val_prediction_dir = './output/JPPNet-s2/'
+    val_gt_dir = './output/JPPNet-s2/'
 
     val_gt_paths = []
-    val_pred_paths = []
+    val_prediction_paths = []
 
-    f = open(val_id_list, 'r')
-    for line in f:
-        val = line.strip("\n")
-        val_gt_paths.append(val_label_dir + val + '.png')
-        val_pred_paths.append(val_output_dir + val + '.png')
+    all_files = os.listdir(val_gt_dir)
 
-    return val_pred_paths, val_gt_paths
+    """for file in all_files:
+        val_gt_paths.append(val_gt_dir + file)
+        val_prediction_paths.append(val_prediction_dir + file)"""
+
+    for file in all_files:
+        if file.startswith("gt_") and "_vis" not in file:
+            val_gt_paths.append(val_gt_dir + file)
+        if file.startswith("pred_") and "_vis" not in file:
+            val_prediction_paths.append(val_prediction_dir + file)
+
+    return val_prediction_paths, val_gt_paths
 
 
 """ For precision, contours_a==GT & contours_b==Prediction
@@ -37,7 +42,6 @@ def init_path():
 def calc_precision_recall(contours_a, contours_b, threshold):
 
     tp_cnt = 0
-    precision_recall = 0
 
     try:
         for b in range(len(contours_b)):
@@ -54,7 +58,7 @@ def calc_precision_recall(contours_a, contours_b, threshold):
                     break
 
         precision_recall = tp_cnt/len(contours_b)
-    except:
+    except Exception as err:
         precision_recall = 0
 
     return precision_recall, tp_cnt, len(contours_b)
@@ -73,7 +77,6 @@ def bfscore(gtfile, prfile, threshold=2):
 
     classes_gt = np.unique(gt_)    # Get GT classes
     classes_pr = np.unique(pr_)    # Get predicted classes
-    classes = None     # Final classes
 
     # Check classes from GT and prediction
     if not np.array_equiv(classes_gt, classes_pr):
@@ -184,9 +187,9 @@ if __name__ == "__main__":
 
     all_scores = []
     val_image_paths, val_label_paths = init_path()
-    for pred_path, label_path in tqdm(zip(val_image_paths, val_label_paths)):
+    for prediction_path, label_path in tqdm(zip(val_image_paths, val_label_paths)):
         try:
-            score = bfscore(label_path, pred_path, 2)
+            score = bfscore(label_path, prediction_path, 2)
             # print(score)
             all_scores.append(np.nanmean(score))
         except Exception as err:
