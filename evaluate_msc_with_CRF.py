@@ -30,7 +30,7 @@ RESTORE_FROM = './checkpoint/JPPNet-s2/'
 OUTPUT_DIR = './output/JPPNet-s2/'
 # OUTPUT_DIR = 'D:/Datasets/LIP/output/JPPNet-s2-pretrained/parsing/val'
 train_records, valid_records = read_LIP_data.read_dataset(
-            DATA_DIRECTORY)
+    DATA_DIRECTORY)
 
 if not os.path.exists(OUTPUT_DIR):
     os.makedirs(OUTPUT_DIR)
