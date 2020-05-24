@@ -1,3 +1,6 @@
+## Disclaimer
+This is a modified repository from [LIP_JPPNet](https://github.com/Engineering-Course/LIP_JPPNet). Please refer to the original repository for more details.
+
 ## Joint Body Parsing & Pose Estimation Network (JPPNet)
 Xiaodan Liang, Ke Gong, Xiaohui Shen, and Liang Lin, "Look into Person: Joint Body Parsing & Pose Estimation Network and A New Benchmark", T-PAMI 2018. [LIP_JPPNet](https://github.com/Engineering-Course/LIP_JPPNet)
 
